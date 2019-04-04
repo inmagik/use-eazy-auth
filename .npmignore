@@ -1,0 +1,8 @@
+/src
+/example
+
+.travis.yml
+webpack.config.js
+yarn.lock
+.babelrc.js
+rollup.config.js
