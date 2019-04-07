@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { render, fireEvent, cleanup, act } from 'react-testing-library'
 import 'jest-dom/extend-expect'
 import Auth from '../Auth'
@@ -476,6 +476,175 @@ describe('Auth', () => {
       expect(getByTestId('authenticated').textContent).toBe('Anon')
       // Should remove tokens
       expect(window.localStorage.removeItem).toHaveBeenLastCalledWith('auth')
+      done()
+    })
+  })
+
+  it('should provide a function to call api', async done => {
+    // Fake da calls
+    const loginCall = jest.fn()
+    // Hack for manual resolve the me promise
+    let resolveMe
+    const meCall = jest.fn(
+      () =>
+        new Promise(resolve => {
+          resolveMe = resolve
+        })
+    )
+    const getUserStatus = jest.fn(() => new Promise(resolve => {
+      resolve('Awesome')
+    }))
+
+    // Fake a good storage
+    const localStorageMock = {
+      getItem: jest.fn(() => JSON.stringify({ accessToken: 23 })),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const MaHomeCalled = () => {
+      const { callApi } = useAuthActions()
+      const [status, setStatus] = useState('')
+      useEffect(() => {
+        callApi(getUserStatus).then(setStatus)
+      }, [callApi])
+
+      return (
+        <div>
+          Status: <div data-testid='status'>{status}</div>
+        </div>
+      )
+    }
+
+    const Eazy = () => {
+      const { authenticated } = useAuthState()
+      return (
+        <div>
+          <WhatInMaAuth />
+          {authenticated && <MaHomeCalled />}
+        </div>
+      )
+    }
+
+    const App = () => (
+      <Auth loginCall={loginCall} meCall={meCall}>
+        <Eazy />
+      </Auth>
+    )
+
+    const { getByTestId } = render(<App />)
+
+    process.nextTick(async () => {
+      // Auth booted
+
+      // Now run the side effect of me...
+      await act(async () => {
+        resolveMe({ username: 'Gio Va' })
+      })
+
+      // The api fn provided should be called \w token
+      expect(getUserStatus).toHaveBeenLastCalledWith(23)
+      // Match response
+      expect(getByTestId('status').textContent).toBe('Awesome')
+      done()
+    })
+  })
+
+  it('should provide a function to call api and logout when raise a 401 status code', async done => {
+    // Fake da calls
+    const loginCall = jest.fn()
+    // Hack for manual resolve the me promise
+    let resolveMe
+    const meCall = jest.fn(
+      () =>
+        new Promise(resolve => {
+          resolveMe = resolve
+        })
+    )
+    const getUserStatus = jest.fn(() => new Promise((resolve, reject) => {
+      reject({ status: 401 })
+    }))
+
+    const getUserStatus2 = jest.fn(() => new Promise(resolve => resolve('XD')))
+
+    // Fake a good storage
+    const localStorageMock = {
+      getItem: jest.fn(() => JSON.stringify({ accessToken: 23 })),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const MaHomeCalled = () => {
+      const { callApi } = useAuthActions()
+      const [status, setStatus] = useState('')
+      useEffect(() => {
+        callApi(getUserStatus).then(setStatus, () => {})
+      }, [callApi])
+
+      return (
+        <div>
+          Status: <div data-testid='status'>{status}</div>
+        </div>
+      )
+    }
+
+    const BananaSplit = () => {
+      const { callApi } = useAuthActions()
+      return (
+        <div>
+          <button data-testid='btn-call' onClick={() => {
+            callApi(getUserStatus2)
+          }}>XD</button>
+        </div>
+      )
+    }
+
+    const Eazy = () => {
+      const { authenticated } = useAuthState()
+      return (
+        <div>
+          <WhatInMaAuth />
+          <BananaSplit />
+          {authenticated && <MaHomeCalled />}
+        </div>
+      )
+    }
+
+    const App = () => (
+      <Auth loginCall={loginCall} meCall={meCall}>
+        <Eazy />
+      </Auth>
+    )
+
+    const { getByTestId } = render(<App />)
+
+    process.nextTick(async () => {
+      // Auth booted
+
+      // Now run the side effect of me...
+      await act(async () => {
+        resolveMe({ username: 'Gio Va' })
+      })
+
+      // The api fn provided should be called \w token
+      expect(getUserStatus).toHaveBeenLastCalledWith(23)
+
+      // Check perform logout
+      expect(getByTestId('authenticated').textContent).toBe('Anon')
+      expect(window.localStorage.removeItem).toHaveBeenLastCalledWith('auth')
+
+      fireEvent.click(getByTestId('btn-call'))
+      // Check callApi call with empty token...
+      expect(getUserStatus2).toHaveBeenLastCalledWith(null)
+
       done()
     })
   })
