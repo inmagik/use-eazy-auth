@@ -5,6 +5,11 @@ module.exports = {
       {
         loose: true,
         modules: false,
+        ...(process.env.NODE_ENV === 'test' && {
+          targets: {
+            node: 'current'
+          }
+        })
       },
     ],
     '@babel/preset-react',

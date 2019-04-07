@@ -36,12 +36,7 @@ export default function Auth({
     storageNamespace,
   ])
 
-  const {
-    bootstrappedAuth,
-    accessToken,
-    loginLoading,
-    loginError,
-  } = state
+  const { bootstrappedAuth, accessToken, loginLoading, loginError } = state
 
   // TODO: Check better strategy and future trouble \w async react
   // This trick is done because token can change over time Es:. the token was refresh
@@ -78,7 +73,14 @@ export default function Auth({
         return
       }
       return (
-        performLogin(loginCredentials, loginCall, meCall, storage, dispatch, tokenRef)
+        performLogin(
+          loginCredentials,
+          loginCall,
+          meCall,
+          storage,
+          dispatch,
+          tokenRef
+        )
           // Keep promise perform login for future use....
           .then(noop, noop)
       )
@@ -99,7 +101,8 @@ export default function Auth({
   // For now simple curry the access token and logout
   // when get 401
   const callApi = useCallback(
-    (apiFn, ...args) => performCallApi(apiFn, storage, dispatch, tokenRef, ...args),
+    (apiFn, ...args) =>
+      performCallApi(apiFn, storage, dispatch, tokenRef, ...args),
     [storage, tokenRef]
   )
 
