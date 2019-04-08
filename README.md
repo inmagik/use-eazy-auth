@@ -21,10 +21,10 @@ npm install --save use-eazy-auth
 ### <Auth />
 
 The main entry point where you have to configure your authentication behaviours.
-`eazy-auth` use your provided `loginCall` to authenticated your user from
-given credentials, `loginCall` must be a function that return a `Promise` that resolves
-a valid `access token` from given credentials you choice.
-After grabbing      the access token from `loginCall` `eazy-auth` call the `meCall` with this
+
+`eazy-auth` use your provided `loginCall` to authenticated your user from given credentials, `loginCall` must be a function that return a `Promise` that resolves a valid `access token`.
+
+After grabbing the access token from `loginCall` `eazy-auth` call the `meCall` with this
 `access token` and if the `meCall` resolves `eazy-auth` authenticate the user and store
 the valid `access token` using the given `storageBackend`.
 When the `Auth` Component mounts check if the storage contains the `access token` and
