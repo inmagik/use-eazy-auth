@@ -127,7 +127,7 @@ const Login = () => {
 A `hook` that return actions to interact with auth.
 
 ```js
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuthActions } from 'use-eazy-auth'
 
 const authenticatedGetTodos = (category, token) => new Promise((resolve, reject) => {
