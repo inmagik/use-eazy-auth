@@ -2,6 +2,7 @@
 
 React hooks to handle common auth stuff.
 The name came from [eazy-auth](https://github.com/inmagik/eazy-auth) because this was started as an excercise to rewrite the battle tested `eazy-auth` library using only React hooks without `redux` and `redux-saga`.
+
 From `eazy-auth` inheriths some concepts and patterns.
 
 ## Warning
