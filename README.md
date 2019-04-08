@@ -1,4 +1,6 @@
 # use-eazy-auth
+[![Build Status](https://api.travis-ci.com/gffuma/use-eazy-auth.svg?branch=master)](https://travis-ci.com/gffuma/use-eazy-auth/)
+[![npm version](https://badge.fury.io/js/use-eazy-auth.svg)](https://www.npmjs.com/package/use-eazy-auth)
 
 React hooks to handle common auth stuff.
 The name came from [eazy-auth](https://github.com/inmagik/eazy-auth) because this was started as an excercise to rewrite the battle tested `eazy-auth` library using only React hooks without `redux` and `redux-saga`.
