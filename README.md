@@ -53,7 +53,7 @@ const App = () => (
 
 ```
 
-## useAuthState
+### useAuthState
 
 A `hook` that return the current auth state.
 
@@ -67,7 +67,117 @@ const Screens = () => {
   }
   return authenticated ? <Home /> : <Login />
 }
+
+
+const Login = () => {
+  const { loginLoading, loginError } = useAuthState()
+  const { login, clearLoginError } = useAuthActions()
+
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+
+  return (
+    <form onSubmit={e => {
+      e.preventDefault()
+      if (username !== '' && password !== '') {
+        login({ username, password })
+      }
+    }}>
+      <div>
+        <input
+          placeholder='@username'
+          type='text'
+          value={username}
+          onChange={e => {
+            clearLoginError()
+            setUsername(e.target.value)
+          }}
+        />
+      </div>
+      <div>
+        <input
+          placeholder='password'
+          type='password'
+          value={password}
+          onChange={e => {
+            clearLoginError()
+            setPassword(e.target.value)
+          }}
+        />
+      </div>
+      <button disabled={loginLoading}>{!loginLoading ? 'Login!' : 'Logged in...'}</button>
+      {loginError && <div>Bad combination of username and password</div>}
+    </form>
+  )
+}
 ```
+
+### useAuthActions
+
+A `hook` that return actions to interact with auth.
+
+```js
+const authenticatedGetTodos = (category, token) => new Promise((resolve, reject) => {
+  return (token === 23)
+    ? resolve([
+      'Learn React',
+      'Prepare the dinner',
+    ])
+    : reject({ status: 401, error: 'Go out' })
+})
+
+const Home = () => {
+  const [todos, setTodos] = useState([])
+  const { logout, callApi } = useAuthActions()
+
+  useEffect(() => {
+    // callApi curry the current access token at last argument
+    // and logout when the api fn rejects status === 401
+    callApi(authenticatedGetTodos, 'all').then(todos => setTodos(todos))
+  }, [
+    callApi // <-- callApi don't changes between render so you can safely put it as deps of useEffect
+            //  but you can also use callApi outside hooks such in an event handler:
+            // onClick={() => callApi(authenticatedGetTodos, 'all').then(todos => setTodos(todos))}
+  ])
+
+  return (
+    <div>
+      <h2>Todos</h2>
+      <ul>
+        {todos.map((todo, i) => (
+          <li key={i}>{todo}</li>
+        ))}
+      </ul>
+      <div>
+        // the logout action also clear the token saved in storage
+        <button onClick={logout}>Logout</button>
+      </div>
+    </div>
+  )
+}
+```
+
+### useAuthUser
+
+A `hook` that return current auth user and access token.
+
+```js
+
+import { useAuthUser } from 'use-eazy-auth'
+
+const Home = () => {
+  const { user, token } = useAuthUser()
+
+  return (
+    <div>
+      Ma men {user.username} <br />
+      <div>With token {token}</div>
+    </div>
+  )
+}
+
+```
+
 
 ## Todos
 

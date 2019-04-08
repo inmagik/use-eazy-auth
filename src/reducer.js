@@ -63,11 +63,16 @@ const authReducer = (
         loginLoading: false,
         loginError: error,
       }
-    case CLEAR_LOGIN_ERROR:
+    case CLEAR_LOGIN_ERROR: {
+      if (previousState.loginError === null) {
+        return previousState
+      }
       return {
         ...previousState,
         loginError: null,
       }
+    }
+
     case LOGIN_SUCCESS:
       return {
         ...previousState,

@@ -22,16 +22,57 @@ const authenticatedGetTodos = token => new Promise((resolve, reject) => {
     : reject({ status: 401, error: 'Go out' })
 })
 
+// const Login = () => {
+//   const {
+//     handleSubmit,
+//     username, password,
+//     loginLoading, loginError,
+//   } = useLogin()
+//   return (
+//     <form onSubmit={handleSubmit}>
+//       <div><input placeholder='@username' type='text' {...username} /></div>
+//       <div><input placeholder='password' type='password' {...password} /></div>
+//       <button disabled={loginLoading}>{!loginLoading ? 'Login!' : 'Logged in...'}</button>
+//       {loginError && <div>Bad combination of username and password</div>}
+//     </form>
+//   )
+// }
 const Login = () => {
-  const {
-    handleSubmit,
-    username, password,
-    loginLoading, loginError,
-  } = useLogin()
+  const { loginLoading, loginError } = useAuthState()
+  const { login, clearLoginError } = useAuthActions()
+
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+
   return (
-    <form onSubmit={handleSubmit}>
-      <div><input placeholder='@username' type='text' {...username} /></div>
-      <div><input placeholder='password' type='password' {...password} /></div>
+    <form onSubmit={e => {
+      e.preventDefault()
+      if (username !== '' && password !== '') {
+        login({ username, password })
+      }
+    }}>
+      <div>
+        <input
+          placeholder='@username'
+          type='text'
+          value={username}
+          onChange={e => {
+            clearLoginError()
+            setUsername(e.target.value)
+          }}
+        />
+      </div>
+      <div>
+        <input
+          placeholder='password'
+          type='password'
+          value={password}
+          onChange={e => {
+            clearLoginError()
+            setPassword(e.target.value)
+          }}
+        />
+      </div>
       <button disabled={loginLoading}>{!loginLoading ? 'Login!' : 'Logged in...'}</button>
       {loginError && <div>Bad combination of username and password</div>}
     </form>
