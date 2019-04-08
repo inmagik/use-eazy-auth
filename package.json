@@ -1,12 +1,21 @@
 {
   "name": "use-eazy-auth",
   "version": "0.0.1",
+  "sideEffects": false,
   "description": "React hooks for handle auth stuff",
   "main": "./lib/index.cjs.js",
   "module": "./lib/index.esm.js",
   "repository": "https://github.com/gffuma/use-eazy-auth",
   "author": "Giovanni Fumagalli <fumagalli.gf@gmail.com>",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gffuma/use-eazy-auth/issues"
+  },
+  "keywords": [
+    "react",
+    "hooks",
+    "auth"
+  ],
   "scripts": {
     "format": "prettier --no-semi --single-quote --trailing-comma es5  --write \"{src,__{tests,mocks}__}/**/*.js\"",
     "prebuild": "rimraf lib",

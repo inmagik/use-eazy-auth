@@ -7,6 +7,11 @@ From `eazy-auth` inheriths some concepts and patterns.
 ## Warning
 Still under heavy development, API may change in upcoming releases.
 
+## Install
+```
+yarn add use-eazy-auth
+npm install --save use-eazy-auth
+```
 
 ## Api
 
@@ -176,6 +181,11 @@ const Home = () => {
   )
 }
 
+```
+
+## Run example
+```
+yarn dev
 ```
 
 
