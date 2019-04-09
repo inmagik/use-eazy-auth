@@ -18,13 +18,13 @@ npm install --save use-eazy-auth
 
 ## Api
 
-### <Auth />
+### `<Auth />`
 
 The main entry point where you have to configure your authentication behaviours.
-`eazy-auth` use your provided `loginCall` to authenticated your user from
-given credentials, `loginCall` must be a function that return a `Promise` that resolves
-a valid `access token` from given credentials you choice.
-After grabbing      the access token from `loginCall` `eazy-auth` call the `meCall` with this
+
+`eazy-auth` use your provided `loginCall` to authenticated your user from given credentials, `loginCall` must be a function that return a `Promise` that resolves a valid `access token`.
+
+After grabbing the access token from `loginCall` `eazy-auth` call the `meCall` with this
 `access token` and if the `meCall` resolves `eazy-auth` authenticate the user and store
 the valid `access token` using the given `storageBackend`.
 When the `Auth` Component mounts check if the storage contains the `access token` and
@@ -32,6 +32,7 @@ use the `meCall` to check if the `user` is still authenticated.
 
 
 ```js
+import React from 'react'
 import Auth from 'use-eazy-auth'
 
 const loginCall = ({ username, password }) => new Promise((resolve, reject) =>
@@ -61,12 +62,13 @@ const App = () => (
 
 ```
 
-### useAuthState
+### `useAuthState`
 
 A `hook` that return the current auth state.
 
 ```js
-import { useAuthState } from 'use-eazy-auth'
+import React, { useState } from 'react'
+import { useAuthState, useAuthActions } from 'use-eazy-auth'
 
 const Screens = () => {
   const { authenticated, bootstrappedAuth } = useAuthState()
@@ -120,11 +122,14 @@ const Login = () => {
 }
 ```
 
-### useAuthActions
+### `useAuthActions`
 
 A `hook` that return actions to interact with auth.
 
 ```js
+import React, { useState, useEffect } from 'react'
+import { useAuthActions } from 'use-eazy-auth'
+
 const authenticatedGetTodos = (category, token) => new Promise((resolve, reject) => {
   return (token === 23)
     ? resolve([
@@ -165,7 +170,7 @@ const Home = () => {
 }
 ```
 
-### useAuthUser
+### `useAuthUser`
 
 A `hook` that return current auth user and access token.
 
