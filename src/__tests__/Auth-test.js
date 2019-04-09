@@ -403,7 +403,7 @@ describe('Auth', () => {
     })
   })
 
-  it('should logout and authenticated user', async done => {
+  it('should logout an authenticated user', async done => {
     // Fake da calls
     const loginCall = jest.fn()
     // Hack for manual resolve the me promise
@@ -491,9 +491,12 @@ describe('Auth', () => {
           resolveMe = resolve
         })
     )
-    const getUserStatus = jest.fn(() => new Promise(resolve => {
-      resolve('Awesome')
-    }))
+    const getUserStatus = jest.fn(
+      () =>
+        new Promise(resolve => {
+          resolve('Awesome')
+        })
+    )
 
     // Fake a good storage
     const localStorageMock = {
@@ -515,7 +518,7 @@ describe('Auth', () => {
 
       return (
         <div>
-          Status: <div data-testid='status'>{status}</div>
+          Status: <div data-testid="status">{status}</div>
         </div>
       )
     }
@@ -565,9 +568,12 @@ describe('Auth', () => {
           resolveMe = resolve
         })
     )
-    const getUserStatus = jest.fn(() => new Promise((resolve, reject) => {
-      reject({ status: 401 })
-    }))
+    const getUserStatus = jest.fn(
+      () =>
+        new Promise((resolve, reject) => {
+          reject({ status: 401 })
+        })
+    )
 
     const getUserStatus2 = jest.fn(() => new Promise(resolve => resolve('XD')))
 
@@ -591,7 +597,7 @@ describe('Auth', () => {
 
       return (
         <div>
-          Status: <div data-testid='status'>{status}</div>
+          Status: <div data-testid="status">{status}</div>
         </div>
       )
     }
@@ -600,9 +606,14 @@ describe('Auth', () => {
       const { callApi } = useAuthActions()
       return (
         <div>
-          <button data-testid='btn-call' onClick={() => {
-            callApi(getUserStatus2)
-          }}>XD</button>
+          <button
+            data-testid="btn-call"
+            onClick={() => {
+              callApi(getUserStatus2)
+            }}
+          >
+            XD
+          </button>
         </div>
       )
     }
@@ -637,7 +648,7 @@ describe('Auth', () => {
       // The api fn provided should be called \w token
       expect(getUserStatus).toHaveBeenLastCalledWith(23)
 
-      // Check perform logout
+      // // Check perform logout
       expect(getByTestId('authenticated').textContent).toBe('Anon')
       expect(window.localStorage.removeItem).toHaveBeenLastCalledWith('auth')
 

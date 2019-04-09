@@ -2,12 +2,13 @@ import React, {
   useCallback,
   createContext,
   useMemo,
+  useEffect,
   useReducer,
   useRef,
 } from 'react'
 import { makeStorage } from './storage'
 import { useConstant } from './helperHooks'
-import { useBootAuth, performLogin, performCallApi } from './authEffects'
+import { bootAuth, performLogin, performCallApi } from './authEffects'
 // Reducer stuff
 import authReducer, { initialState } from './reducer'
 import bindActionCreators from './bindActionCreators'
@@ -26,10 +27,12 @@ export default function Auth({
   children,
   loginCall,
   meCall,
+  refreshTokenCall,
   storageBackend,
   storageNamespace = 'auth',
 }) {
   const [state, dispatch] = useReducer(authReducer, initialState)
+  // console.log('Render auth', state)
 
   const storage = useMemo(() => makeStorage(storageBackend, storageNamespace), [
     storageBackend,
@@ -43,14 +46,25 @@ export default function Auth({
   // But the callApi function instance can't change because this can cause
   // re-running of other useEffect \w callApi as deps or break other
   // memoization ... plus this approch guarantee doesn't trigger re-render
-  // of components thath subscribe only to auth actions when token changes
+  // of components thath subscribe only to auth actions context when token changes
+  // SIDE NOTE
+  // In a more idiomatic way at the ends an access token isn't important
+  // for your rendering is only a detail implementation of how your
+  // server rember who you are ... So if a token change isn't important for
+  // rendering but is important for the (*future*) for side effects
   const tokenRef = useRef(null)
 
   // Is authenticated when has an access token eazy
+  // This line can't look stupid but is very very important
   const authenticated = !!accessToken
 
   // Boot Eazy Auth
-  useBootAuth(meCall, storage, dispatch, tokenRef)
+  useEffect(
+    () => bootAuth(meCall, refreshTokenCall, storage, dispatch, tokenRef),
+    // FIXME: Find a way to enforce or only warn in __DEV__ to keep
+    // meCall etc immutable
+    [meCall, refreshTokenCall, storage, dispatch, tokenRef]
+  )
 
   // ~~ Make Actions ~~~
 
@@ -98,12 +112,17 @@ export default function Auth({
     }
   }, [storage, authenticated, tokenRef])
 
-  // For now simple curry the access token and logout
-  // when get 401
   const callApi = useCallback(
     (apiFn, ...args) =>
-      performCallApi(apiFn, storage, dispatch, tokenRef, ...args),
-    [storage, tokenRef]
+      performCallApi(
+        apiFn,
+        refreshTokenCall,
+        storage,
+        dispatch,
+        tokenRef,
+        ...args
+      ),
+    [storage, refreshTokenCall, tokenRef]
   )
 
   // Memoized actions

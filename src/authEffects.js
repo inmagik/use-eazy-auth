@@ -1,65 +1,120 @@
-import { useEffect } from 'react'
 import {
   BOOTSTRAP_AUTH_START,
-  AUTH_WITH_TOKEN_LOADING,
-  AUTH_WITH_TOKEN_SUCCESS,
-  AUTH_WITH_TOKEN_FAILURE,
   BOOTSTRAP_AUTH_END,
   LOGIN_LOADING,
   LOGIN_SUCCESS,
   LOGIN_FAILURE,
+  TOKEN_REFRESHED,
   LOGOUT,
 } from './actionTypes'
 
-// Hooks for booting eazy-auth
+function makeCallWithRefresh(refreshTokenCall, accessToken, refreshToken) {
+  return (apiFn, ...args) => {
+    return apiFn(...args, accessToken).then(
+      response => [response, null],
+      error => {
+        if (
+          // Tri refresh when:
+          // Got an auth error
+          error.status === 401 &&
+          // We have a refresh token and an api call that we can perform
+          // 2 refresh it!
+          refreshToken &&
+          typeof refreshTokenCall === 'function'
+        ) {
+          return refreshTokenCall(refreshToken).then(
+            refreshedTokens => {
+              // Yeah refresh appends!
+              // Ok now retry the apiFn \w refreshed shit!
+              return apiFn(...args, refreshedTokens.accessToken).then(
+                response => {
+                  // console.log('Refresh appends!', refreshedTokens)
+                  // Curry the refreshed shit \w response
+                  return [response, refreshedTokens]
+                },
+                // The error of new api fn don't really means
+                // instead reject the original 401 to enforce logout process
+                () => Promise.reject(error)
+              )
+            },
+            // At this point the refresh error does not is so usefuel
+            // instead reject the original 401 to enforce logout process
+            () => Promise.reject(error)
+          )
+        }
+        // Normal rejection
+        return Promise.reject(error)
+      }
+    )
+  }
+}
+
+// Boot eazy-auth
 // Read tokens from provided storage
 // if any try to use theese to authenticate the user \w the given meCall
 // LS -> meCall(token) -> user
 // dispatch to top state and keep token in sync using a React useRef
-export function useBootAuth(meCall, storage, dispatch, tokenRef) {
-  useEffect(() => {
-    // console.log('Booootstrap Ma MEN Eazy Auth')
+export function bootAuth(
+  meCall,
+  refreshTokenCall,
+  storage,
+  dispatch,
+  tokenRef
+) {
+  // console.log('Booootstrap Ma MEN Eazy Auth')
+  dispatch({ type: BOOTSTRAP_AUTH_START })
 
-    dispatch({ type: BOOTSTRAP_AUTH_START })
+  // Shortcut to finish boot process default not authenticated
+  function endBoot(payload = { authenticated: false }) {
+    dispatch({ type: BOOTSTRAP_AUTH_END, payload })
+  }
 
-    const endBoot = () => dispatch({ type: BOOTSTRAP_AUTH_END })
+  storage.getTokens().then(tokensInStorage => {
+    // console.log('What in storage?', tokensInStorage)
 
-    storage.getTokens().then(tokens => {
-      // console.log('What in storage?', tokens)
+    // No tokens in storage Nothing 2 do
+    if (!tokensInStorage) {
+      endBoot()
+      return
+    }
 
-      // Nothing 2 do
-      if (!tokens) {
-        endBoot()
-        return
-      }
+    // Prepare the ~ M A G I K ~ Api call with refresh
+    const callWithRefresh = makeCallWithRefresh(
+      refreshTokenCall,
+      tokensInStorage.accessToken,
+      tokensInStorage.refreshToken
+    )
 
-      const { accessToken } = tokens
+    // Call with refresh!
+    // fn(token) --> 401 -> REFRESH -> tokens! -> fn(freshToken) ~>
+    callWithRefresh(meCall).then(
+      responseWithRefresh => {
+        const [user, refreshedTokens] = responseWithRefresh
+        // If token refreshed take the token refreshed as valid otherwise use the good
+        // old tokens from local storage
+        const validTokens = refreshedTokens ? refreshedTokens : tokensInStorage
 
-      dispatch({ type: AUTH_WITH_TOKEN_LOADING })
+        // GANG saved the valid tokens to the current ref!
+        tokenRef.current = validTokens
 
-      // TODO: Implement refresh ...
-      meCall(accessToken).then(
-        user => {
-          tokenRef.current = accessToken
-          // GANG save the token ref
-          dispatch({
-            type: AUTH_WITH_TOKEN_SUCCESS,
-            payload: { user, accessToken },
-          })
-          endBoot()
-        },
-        error => {
-          dispatch({
-            type: AUTH_WITH_TOKEN_FAILURE,
-            error,
-          })
-          endBoot()
-          // Clear bad tokens
-          storage.removeTokens()
+        // Tell to ma reducer
+        endBoot({
+          authenticated: true,
+          user,
+          ...validTokens,
+        })
+        // Plus only if refreshed save freshed in local storage!
+        if (refreshedTokens) {
+          storage.setTokens(refreshedTokens)
         }
-      )
-    }, endBoot)
-  }, [storage, meCall, dispatch, tokenRef])
+      },
+      error => {
+        endBoot()
+        // Clear bad tokens from storage
+        storage.removeTokens()
+      }
+    )
+  }, endBoot)
 }
 
 export function performLogin(
@@ -88,7 +143,7 @@ export function performLogin(
 
       meCall(accessToken, loginResponse).then(user => {
         // Save the token ref GANG!
-        tokenRef.current = accessToken
+        tokenRef.current = { accessToken, refreshToken, expires }
         dispatch({
           type: LOGIN_SUCCESS,
           payload: {
@@ -112,23 +167,51 @@ export function performLogin(
   })
 }
 
-export function performCallApi(apiFn, storage, dispatch, tokenRef, ...args) {
+export function performCallApi(
+  apiFn,
+  refreshTokenCall,
+  storage,
+  dispatch,
+  tokenRef,
+  ...args
+) {
   // Get the actual token
-  const accessToken = tokenRef.current
+  const { accessToken = null, refreshToken = null } = tokenRef.current || {}
+
+  // Prepare the ~ M A G I K ~ Api call with refresh
+  const callWithRefresh = makeCallWithRefresh(
+    refreshTokenCall,
+    accessToken,
+    refreshToken
+  )
   // console.log('SACRO TOKEN', accessToken)
-  // TODO: Implement with refresh ahhahahaahah
-  return apiFn(...args, accessToken).catch(error => {
-    if (error.status === 401) {
-      // NOTE: Not sure if is really a good idea but i think
-      // this can't prevetn some edge cases
-      if (accessToken === tokenRef.current) {
-        // Clear token ref
-        tokenRef.current = null
-        // Trigger log out
-        dispatch({ type: LOGOUT, payload: {} })
-        storage.removeTokens()
+  return callWithRefresh(apiFn, ...args).then(
+    responseWithRefresh => {
+      const [response, refreshedTokens] = responseWithRefresh
+
+      if (refreshedTokens) {
+        dispatch({
+          type: TOKEN_REFRESHED,
+          payload: refreshedTokens,
+        })
+        storage.setTokens(refreshedTokens)
       }
+
+      return response
+    },
+    error => {
+      if (error.status === 401) {
+        // NOTE: Not sure if is really a good idea but i think
+        // this can't prevetn some edge cases
+        if (tokenRef.current && accessToken === tokenRef.current.accessToken) {
+          // Clear token ref
+          tokenRef.current = null
+          // Trigger log out
+          dispatch({ type: LOGOUT, payload: {} })
+          storage.removeTokens()
+        }
+      }
+      return Promise.reject(error)
     }
-    return Promise.reject(error)
-  })
+  )
 }

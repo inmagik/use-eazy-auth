@@ -12,9 +12,9 @@ import {
   BOOTSTRAP_AUTH_END,
 
   // Initial auth from local storage token actions
-  AUTH_WITH_TOKEN_LOADING,
-  AUTH_WITH_TOKEN_FAILURE,
-  AUTH_WITH_TOKEN_SUCCESS,
+  // AUTH_WITH_TOKEN_LOADING,
+  // AUTH_WITH_TOKEN_FAILURE,
+  // AUTH_WITH_TOKEN_SUCCESS,
 
   // Token refreshed
   TOKEN_REFRESHED,
@@ -42,7 +42,7 @@ export const initialState = {
   // MAP to -> authBooted
   bootstrappedAuth: false,
   bootstrappingAuth: false,
-  authenticatingWithToken: false,
+  // authenticatingWithToken: false,
   // logoutFromPermission: false,
 }
 
@@ -72,7 +72,6 @@ const authReducer = (
         loginError: null,
       }
     }
-
     case LOGIN_SUCCESS:
       return {
         ...previousState,
@@ -81,38 +80,55 @@ const authReducer = (
         accessToken: payload.accessToken,
         refreshToken: payload.refreshToken,
         expires: payload.expires,
-        logoutFromPermission: false,
+        // logoutFromPermission: false,
       }
     case BOOTSTRAP_AUTH_START:
       return {
         ...previousState,
         bootstrappingAuth: true,
       }
-    case BOOTSTRAP_AUTH_END:
-      return {
+    case BOOTSTRAP_AUTH_END: {
+      let nextState = {
         ...previousState,
         bootstrappedAuth: true,
         bootstrappingAuth: false,
       }
-    case AUTH_WITH_TOKEN_LOADING:
-      return {
-        ...previousState,
-        authenticatingWithToken: true,
+      if (payload.authenticated) {
+        const {
+          user,
+          accessToken,
+          refreshToken = null,
+          expires = null,
+        } = payload
+        return {
+          ...nextState,
+          user,
+          accessToken,
+          refreshToken,
+          expires,
+        }
       }
-    case AUTH_WITH_TOKEN_FAILURE:
-      return {
-        ...previousState,
-        authenticatingWithToken: false,
-      }
-    case AUTH_WITH_TOKEN_SUCCESS:
-      return {
-        ...previousState,
-        authenticatingWithToken: false,
-        expires: payload.expires,
-        user: payload.user,
-        accessToken: payload.accessToken,
-        refreshToken: payload.refreshToken,
-      }
+      return nextState
+    }
+    // case AUTH_WITH_TOKEN_LOADING:
+    //   return {
+    //     ...previousState,
+    //     authenticatingWithToken: true,
+    //   }
+    // case AUTH_WITH_TOKEN_FAILURE:
+    //   return {
+    //     ...previousState,
+    //     authenticatingWithToken: false,
+    //   }
+    // case AUTH_WITH_TOKEN_SUCCESS:
+    //   return {
+    //     ...previousState,
+    //     authenticatingWithToken: false,
+    //     expires: payload.expires,
+    //     user: payload.user,
+    //     accessToken: payload.accessToken,
+    //     refreshToken: payload.refreshToken,
+    //   }
     case TOKEN_REFRESHED:
       return {
         ...previousState,
@@ -138,7 +154,7 @@ const authReducer = (
         ...initialState,
         // Logout doesn't mean re check tokens in ls and so on...
         bootstrappedAuth: previousState.bootstrappedAuth,
-        logoutFromPermission: payload.fromPermission,
+        // logoutFromPermission: payload.fromPermission,
       }
     default:
       return previousState

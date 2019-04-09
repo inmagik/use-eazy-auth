@@ -3,17 +3,25 @@ import Auth, { useLogin, useAuthState, useAuthActions, useAuthUser } from 'use-e
 
 const loginCall = ({ username, password }) => new Promise((resolve, reject) =>
   (username === 'giova' && password === 'xiboro23')
-    ? resolve({ accessToken: 23 })
+    ? resolve({ accessToken: 23, refreshToken: 777 })
     : reject({ status: 401, error: 'Go out' })
 )
 
 const meCall = token => new Promise((resolve, reject) =>
-  (token === 23)
+  (token === 2323)
     ? resolve({ username: 'giova', status: 'Awesome' })
     : reject({ status: 401, error: 'Go out' })
 )
 
+const refreshTokenCall = token => new Promise((resolve, reject) => {
+  const newToken = 23
+  return (token === 777)
+    ? resolve({ accessToken: newToken, refreshToken: 777 })
+    : reject({ status: 401, error: 'Go out' })
+})
+
 const authenticatedGetTodos = token => new Promise((resolve, reject) => {
+  console.log('x', token)
   return (token === 23)
     ? resolve([
       'Learn React',
@@ -116,6 +124,7 @@ const App = () => (
   <Auth
     loginCall={loginCall}
     meCall={meCall}
+    refreshTokenCall={refreshTokenCall}
   >
     <Screens />
   </Auth>
