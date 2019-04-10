@@ -315,6 +315,10 @@ describe('Auth', () => {
         username: 'giova',
         password: 'xiboro23',
       })
+      expect(window.localStorage.setItem).toHaveBeenLastCalledWith('auth', JSON.stringify({
+        expires: null,
+        accessToken: 23,
+      }))
       // At this time ma men should be authenticated and auth booted!
       expect(getByTestId('auth-booted').textContent).toBe('Booted!')
       expect(getByTestId('authenticated').textContent).toBe('Authenticated')
@@ -657,6 +661,109 @@ describe('Auth', () => {
       expect(getUserStatus2).toHaveBeenLastCalledWith(null)
 
       done()
+    })
+  })
+  it('should try to refresh token on boot when me give 401', async done => {
+    // Fake da calls
+    const loginCall = jest.fn()
+    let rejectMe
+    let resolveMe
+    const meCall = jest.fn(
+      () =>
+        new Promise((resolve, reject) => {
+          resolveMe = resolve
+          rejectMe = reject
+        })
+    )
+    let resolveRefresh
+    const refreshTokenCall = jest.fn(
+      () =>
+        new Promise((resolve, reject) => {
+          resolveRefresh = resolve
+        })
+    )
+
+    // Fake a stroage \w a bad access token and good refresh
+    const localStorageMock = {
+      getItem: jest.fn(() => JSON.stringify({
+        accessToken: 23,
+        refreshToken: 777,
+      })),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const Eazy = () => {
+      const { authenticated } = useAuthState()
+      return (
+        <div>
+          <WhatInMaAuth />
+          {authenticated && <MaHome />}
+        </div>
+      )
+    }
+
+    const App = () => (
+      <Auth
+        loginCall={loginCall}
+        meCall={meCall}
+        refreshTokenCall={refreshTokenCall}
+      >
+        <Eazy />
+      </Auth>
+    )
+
+    const { getByTestId } = render(<App />)
+
+    // After the inital render auth is in booting
+    expect(getByTestId('auth-booted').textContent).toBe('Booting...')
+    // ... And user not authenticated
+    expect(getByTestId('authenticated').textContent).toBe('Anon')
+
+    process.nextTick(async () => {
+      // ... Next tick promise have been resolved
+      // Check local stroage to have been called \w the default key auth
+      expect(window.localStorage.getItem).toHaveBeenLastCalledWith('auth')
+      // Ok something is in storage auth still bootstrapping
+      expect(getByTestId('auth-booted').textContent).toBe('Booting...')
+      // And user still anon ...
+      expect(getByTestId('authenticated').textContent).toBe('Anon')
+
+      // Check me called
+      expect(meCall).toHaveBeenLastCalledWith(23)
+
+      // Reject 401 from me
+      await act(async () => {
+        rejectMe({ status: 401 })
+      })
+
+      // Now should we start the refresh
+      expect(refreshTokenCall).toHaveBeenLastCalledWith(777)
+      resolveRefresh({ accessToken: 2323, refreshToken: 69 })
+
+      // Wait next tick to ensure refresh resolves
+      process.nextTick(async () => {
+        expect(meCall).toHaveBeenNthCalledWith(2, 2323)
+
+        // Ok time to update ma men React state
+        await act(async () => {
+          resolveMe({ username: 'Gio Va' })
+        })
+        expect(window.localStorage.setItem).toHaveBeenLastCalledWith('auth', JSON.stringify({
+          accessToken: 2323,
+          refreshToken: 69,
+        }))
+        // At this time ma men should be authenticated and auth booted!
+        expect(getByTestId('auth-booted').textContent).toBe('Booted!')
+        expect(getByTestId('authenticated').textContent).toBe('Authenticated')
+        // eheh and now the user should be ma men gio va
+        expect(getByTestId('username').textContent).toBe('Gio Va')
+        done()
+      })
     })
   })
 })

@@ -61,13 +61,13 @@ export function bootAuth(
   dispatch,
   tokenRef
 ) {
-  // console.log('Booootstrap Ma MEN Eazy Auth')
-  dispatch({ type: BOOTSTRAP_AUTH_START })
-
   // Shortcut to finish boot process default not authenticated
   function endBoot(payload = { authenticated: false }) {
     dispatch({ type: BOOTSTRAP_AUTH_END, payload })
   }
+
+  // console.log('Booootstrap Ma MEN Eazy Auth')
+  dispatch({ type: BOOTSTRAP_AUTH_START })
 
   storage.getTokens().then(tokensInStorage => {
     // console.log('What in storage?', tokensInStorage)
@@ -126,17 +126,18 @@ export function performLogin(
   tokenRef
 ) {
   return new Promise((resolve, reject) => {
-    // console.log('~Log Me IN ~')
 
-    dispatch({ type: LOGIN_LOADING })
-
-    const loginFailed = error => {
+    // Shortcut to finish login \w failure
+    function loginFailed(error) {
       dispatch({
         type: LOGIN_FAILURE,
         error,
       })
       reject(error)
     }
+
+    // console.log('~Log Me IN ~')
+    dispatch({ type: LOGIN_LOADING })
 
     loginCall(loginCredentials).then(loginResponse => {
       const { accessToken, refreshToken, expires = null } = loginResponse

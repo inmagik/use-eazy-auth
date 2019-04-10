@@ -22,6 +22,8 @@ function getResolvedOrPromise(value) {
 // getTokens LS -> User
 // setTokens User -> LS
 // removeTokens rm -rf LS
+// FIXME: There is a not a bug but no simmetrical store between get and set
+// check ALL the keys to be compilant and trouble \w undefined and default values....
 export const makeStorage = (givenStorageBackend, storageNamespace) => {
   let storageBackend
   if (
