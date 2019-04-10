@@ -20,6 +20,7 @@ npm install --save use-eazy-auth
 
 ### `<Auth />`
 
+
 The main entry point where you have to configure your authentication behaviours.
 
 `eazy-auth` use your provided `loginCall` to authenticated your user from given credentials, `loginCall` must be a function that return a `Promise` that resolves a valid `access token`.
@@ -29,6 +30,19 @@ After grabbing the access token from `loginCall` `eazy-auth` call the `meCall` w
 the valid `access token` using the given `storageBackend`.
 When the `Auth` Component mounts check if the storage contains the `access token` and
 use the `meCall` to check if the `user` is still authenticated.
+
+Props:
+
+| Prop          | Type          | Default  | Description |
+| ------------- |-------------|-----|------------|
+|  loginCall |fn => Promise | | A function that return a Promise that resolves an access token and a refresh token (if you want your token to be refreshed)<br /> `(credentials) => Promise.resolve({ accessToken, refreshToken? })`. |
+|  meCall |fn => Promise | | A function that return a Promise that resolves an user object `(accessToken) => Promise.resolve(user)`.  |
+|  refreshTokenCall |fn => Promise | | A function that return a Promise that resolves refreshed tokens `(refreshToken) =>  Promise.resolve({ accessToken, refreshToken })`<br /> called when `meCall` or `callApi` rejects `{ status: 401 }`. |      
+|  storageBackend | object/false | localStorage | The storage where tokens are stored for subsequent acess, acept localStorage like objects, can be async (retrun Promises from methods) use `false` if you want to omit saving tokens.
+|  storageNamespace | string | 'auth' | The key of storage where tokens are stored.         
+             
+               
+              
 
 
 ```js
@@ -62,7 +76,7 @@ const App = () => (
 
 ```
 
-### `useAuthState`
+### `useAuthState()`
 
 A `hook` that return the current auth state.
 
@@ -122,7 +136,7 @@ const Login = () => {
 }
 ```
 
-### `useAuthActions`
+### `useAuthActions()`
 
 A `hook` that return actions to interact with auth.
 
@@ -170,7 +184,7 @@ const Home = () => {
 }
 ```
 
-### `useAuthUser`
+### `useAuthUser()`
 
 A `hook` that return current auth user and access token.
 
