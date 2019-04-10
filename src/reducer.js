@@ -11,11 +11,6 @@ import {
   BOOTSTRAP_AUTH_START,
   BOOTSTRAP_AUTH_END,
 
-  // Initial auth from local storage token actions
-  // AUTH_WITH_TOKEN_LOADING,
-  // AUTH_WITH_TOKEN_FAILURE,
-  // AUTH_WITH_TOKEN_SUCCESS,
-
   // Token refreshed
   TOKEN_REFRESHED,
 
@@ -30,19 +25,18 @@ import {
 } from './actionTypes'
 
 export const initialState = {
+  // Is auth boooted?
+  bootstrappingAuth: false,
+  bootstrappedAuth: false,
+  // Current logged user
   user: null,
+  // Tokens
   accessToken: null,
   refreshToken: null,
   expires: null,
-
+  // Login state
   loginLoading: false,
   loginError: null,
-
-  //....
-  // MAP to -> authBooted
-  bootstrappedAuth: false,
-  bootstrappingAuth: false,
-  // authenticatingWithToken: false,
   // logoutFromPermission: false,
 }
 
@@ -110,25 +104,6 @@ const authReducer = (
       }
       return nextState
     }
-    // case AUTH_WITH_TOKEN_LOADING:
-    //   return {
-    //     ...previousState,
-    //     authenticatingWithToken: true,
-    //   }
-    // case AUTH_WITH_TOKEN_FAILURE:
-    //   return {
-    //     ...previousState,
-    //     authenticatingWithToken: false,
-    //   }
-    // case AUTH_WITH_TOKEN_SUCCESS:
-    //   return {
-    //     ...previousState,
-    //     authenticatingWithToken: false,
-    //     expires: payload.expires,
-    //     user: payload.user,
-    //     accessToken: payload.accessToken,
-    //     refreshToken: payload.refreshToken,
-    //   }
     case TOKEN_REFRESHED:
       return {
         ...previousState,

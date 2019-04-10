@@ -39,7 +39,13 @@ export default function Auth({
     storageNamespace,
   ])
 
-  const { bootstrappedAuth, accessToken, loginLoading, loginError } = state
+  const {
+    bootstrappedAuth,
+    bootstrappingAuth,
+    accessToken,
+    loginLoading,
+    loginError,
+  } = state
 
   // TODO: Check better strategy and future trouble \w async react
   // This trick is done because token can change over time Es:. the token was refresh
@@ -59,12 +65,12 @@ export default function Auth({
   const authenticated = !!accessToken
 
   // Boot Eazy Auth
-  useEffect(
-    () => bootAuth(meCall, refreshTokenCall, storage, dispatch, tokenRef),
-    // FIXME: Find a way to enforce or only warn in __DEV__ to keep
-    // meCall etc immutable
-    [meCall, refreshTokenCall, storage, dispatch, tokenRef]
-  )
+  useEffect(() => {
+    // Ensure auth boostrapped only once
+    if (!bootstrappedAuth && !bootstrappingAuth) {
+      bootAuth(meCall, refreshTokenCall, storage, dispatch, tokenRef)
+    }
+  }, [meCall, refreshTokenCall, storage, bootstrappedAuth, bootstrappingAuth])
 
   // ~~ Make Actions ~~~
 
@@ -99,7 +105,7 @@ export default function Auth({
           .then(noop, noop)
       )
     },
-    [bootstrappedAuth, authenticated, loginLoading, loginCall, meCall, storage]
+    [meCall, loginCall, storage, bootstrappedAuth, authenticated, loginLoading]
   )
 
   const logout = useCallback(() => {
@@ -110,7 +116,7 @@ export default function Auth({
       dispatch({ type: LOGOUT, payload: {} })
       storage.removeTokens()
     }
-  }, [storage, authenticated, tokenRef])
+  }, [storage, authenticated])
 
   const callApi = useCallback(
     (apiFn, ...args) =>
@@ -122,7 +128,7 @@ export default function Auth({
         tokenRef,
         ...args
       ),
-    [storage, refreshTokenCall, tokenRef]
+    [refreshTokenCall, storage]
   )
 
   // Memoized actions

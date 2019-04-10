@@ -86,7 +86,7 @@ export function bootAuth(
     )
 
     // Call with refresh!
-    // fn(token) --> 401 -> REFRESH -> tokens! -> fn(freshToken) ~>
+    // fn(token) -> 401 -> refreshTokenCall(refreshToken) -> fn(freshedToken)
     callWithRefresh(meCall).then(
       responseWithRefresh => {
         const [user, refreshedTokens] = responseWithRefresh
