@@ -126,7 +126,6 @@ export function performLogin(
   tokenRef
 ) {
   return new Promise((resolve, reject) => {
-
     // Shortcut to finish login \w failure
     function loginFailed(error) {
       dispatch({

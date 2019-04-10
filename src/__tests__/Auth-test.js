@@ -315,10 +315,13 @@ describe('Auth', () => {
         username: 'giova',
         password: 'xiboro23',
       })
-      expect(window.localStorage.setItem).toHaveBeenLastCalledWith('auth', JSON.stringify({
-        expires: null,
-        accessToken: 23,
-      }))
+      expect(window.localStorage.setItem).toHaveBeenLastCalledWith(
+        'auth',
+        JSON.stringify({
+          expires: null,
+          accessToken: 23,
+        })
+      )
       // At this time ma men should be authenticated and auth booted!
       expect(getByTestId('auth-booted').textContent).toBe('Booted!')
       expect(getByTestId('authenticated').textContent).toBe('Authenticated')
@@ -685,10 +688,12 @@ describe('Auth', () => {
 
     // Fake a stroage \w a bad access token and good refresh
     const localStorageMock = {
-      getItem: jest.fn(() => JSON.stringify({
-        accessToken: 23,
-        refreshToken: 777,
-      })),
+      getItem: jest.fn(() =>
+        JSON.stringify({
+          accessToken: 23,
+          refreshToken: 777,
+        })
+      ),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -753,10 +758,13 @@ describe('Auth', () => {
         await act(async () => {
           resolveMe({ username: 'Gio Va' })
         })
-        expect(window.localStorage.setItem).toHaveBeenLastCalledWith('auth', JSON.stringify({
-          accessToken: 2323,
-          refreshToken: 69,
-        }))
+        expect(window.localStorage.setItem).toHaveBeenLastCalledWith(
+          'auth',
+          JSON.stringify({
+            accessToken: 2323,
+            refreshToken: 69,
+          })
+        )
         // At this time ma men should be authenticated and auth booted!
         expect(getByTestId('auth-booted').textContent).toBe('Booted!')
         expect(getByTestId('authenticated').textContent).toBe('Authenticated')
@@ -799,10 +807,12 @@ describe('Auth', () => {
 
     // Fake a good storage
     const localStorageMock = {
-      getItem: jest.fn(() => JSON.stringify({
-        accessToken: 23,
-        refreshToken: 777,
-      })),
+      getItem: jest.fn(() =>
+        JSON.stringify({
+          accessToken: 23,
+          refreshToken: 777,
+        })
+      ),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -871,10 +881,13 @@ describe('Auth', () => {
           await act(async () => {
             resolveApi('Awesome')
           })
-          expect(window.localStorage.setItem).toHaveBeenLastCalledWith('auth', JSON.stringify({
-            accessToken: 2323,
-            refreshToken: 69,
-          }))
+          expect(window.localStorage.setItem).toHaveBeenLastCalledWith(
+            'auth',
+            JSON.stringify({
+              accessToken: 2323,
+              refreshToken: 69,
+            })
+          )
           // At this time ma men should be authenticated and auth booted!
           // Now ma api should resolves!
           expect(getByTestId('status').textContent).toBe('Awesome')
@@ -883,7 +896,6 @@ describe('Auth', () => {
           done()
         })
       })
-
     })
   })
 })

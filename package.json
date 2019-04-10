@@ -18,8 +18,8 @@
   ],
   "scripts": {
     "format": "prettier --no-semi --single-quote --trailing-comma es5  --write \"{src,__{tests,mocks}__}/**/*.js\"",
-    "prebuild": "rimraf lib",
     "test": "jest",
+    "prebuild": "rimraf lib",
     "build": "rollup -c",
     "build:watch": "rollup -c -w",
     "dev": "webpack-dev-server"
