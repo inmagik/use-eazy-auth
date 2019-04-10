@@ -762,8 +762,129 @@ describe('Auth', () => {
         expect(getByTestId('authenticated').textContent).toBe('Authenticated')
         // eheh and now the user should be ma men gio va
         expect(getByTestId('username').textContent).toBe('Gio Va')
+        // TODO: Check the valid access token in state
+        // and fucking refresh in da ref!
         done()
       })
+    })
+  })
+
+  it('should provide a function to call api ... with refresh YEAH!', async done => {
+    // Fake da calls
+    const loginCall = jest.fn()
+    // Hack for manual resolve the me promise
+    let resolveMe
+    const meCall = jest.fn(
+      () =>
+        new Promise(resolve => {
+          resolveMe = resolve
+        })
+    )
+    let resolveApi
+    let rejectApi
+    const getUserStatus = jest.fn(
+      () =>
+        new Promise((resolve, reject) => {
+          resolveApi = resolve
+          rejectApi = reject
+        })
+    )
+    let resolveRefresh
+    const refreshTokenCall = jest.fn(
+      () =>
+        new Promise((resolve, reject) => {
+          resolveRefresh = resolve
+        })
+    )
+
+    // Fake a good storage
+    const localStorageMock = {
+      getItem: jest.fn(() => JSON.stringify({
+        accessToken: 23,
+        refreshToken: 777,
+      })),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const MaHomeCalled = () => {
+      const { callApi } = useAuthActions()
+      const [status, setStatus] = useState('')
+      useEffect(() => {
+        callApi(getUserStatus).then(setStatus)
+      }, [callApi])
+
+      return (
+        <div>
+          Status: <div data-testid="status">{status}</div>
+        </div>
+      )
+    }
+
+    const Eazy = () => {
+      const { authenticated } = useAuthState()
+      return (
+        <div>
+          <WhatInMaAuth />
+          {authenticated && <MaHomeCalled />}
+        </div>
+      )
+    }
+
+    const App = () => (
+      <Auth
+        loginCall={loginCall}
+        meCall={meCall}
+        refreshTokenCall={refreshTokenCall}
+      >
+        <Eazy />
+      </Auth>
+    )
+
+    const { getByTestId } = render(<App />)
+
+    process.nextTick(async () => {
+      // Auth booted
+
+      // Now run the side effect of me...
+      await act(async () => {
+        resolveMe({ username: 'Gio Va' })
+      })
+
+      // The api fn provided should be called \w token
+      expect(getUserStatus).toHaveBeenLastCalledWith(23)
+
+      rejectApi({ status: 401 })
+
+      // Now should we start the refresh
+      getUserStatus.mock.results[0].value.catch(() => {
+        /// ehehehehe wait the api catch to be processed inda event loop
+        expect(refreshTokenCall).toHaveBeenLastCalledWith(777)
+        resolveRefresh({ accessToken: 2323, refreshToken: 69 })
+        // Wait next tick to ensure refresh resolves ...
+        refreshTokenCall.mock.results[0].value.then(async () => {
+          console.log('Called?')
+          expect(getUserStatus).toHaveBeenNthCalledWith(2, 2323)
+          await act(async () => {
+            resolveApi('Awesome')
+          })
+          expect(window.localStorage.setItem).toHaveBeenLastCalledWith('auth', JSON.stringify({
+            accessToken: 2323,
+            refreshToken: 69,
+          }))
+          // At this time ma men should be authenticated and auth booted!
+          // Now ma api should resolves!
+          expect(getByTestId('status').textContent).toBe('Awesome')
+          // TODO: Check the valid access token in state
+          // and fucking refresh in da ref!
+          done()
+        })
+      })
+
     })
   })
 })
