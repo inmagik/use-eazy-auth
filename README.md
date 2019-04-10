@@ -199,8 +199,9 @@ yarn dev
 
 ## Todos
 
+- [x] refresh token logic
+- [ ] refresh before expiring
 - [ ] useLogin
-- [ ] refresh token logic
 - [ ] Routes for `react-router` as `eazy-auth` does
 - [ ] Improve tests
 - [ ] Improve docs

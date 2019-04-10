@@ -867,7 +867,6 @@ describe('Auth', () => {
         resolveRefresh({ accessToken: 2323, refreshToken: 69 })
         // Wait next tick to ensure refresh resolves ...
         refreshTokenCall.mock.results[0].value.then(async () => {
-          console.log('Called?')
           expect(getUserStatus).toHaveBeenNthCalledWith(2, 2323)
           await act(async () => {
             resolveApi('Awesome')
