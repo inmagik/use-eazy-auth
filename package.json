@@ -1,6 +1,6 @@
 {
   "name": "use-eazy-auth",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "sideEffects": false,
   "description": "React hooks for handle auth stuff",
   "main": "./lib/index.cjs.js",
