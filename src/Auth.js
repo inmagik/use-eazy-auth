@@ -81,18 +81,14 @@ export default function Auth({
 
   const login = useCallback(
     loginCredentials => {
-      // Nothing 2 do
       if (
         // Is eazy auth boostrapped?
-        !bootstrappedAuth ||
+        bootstrappedAuth &&
         // Is alredy loading call in place?
-        loginLoading ||
+        !loginLoading &&
         // Is ma men alredy logged?
-        authenticated
+        !authenticated
       ) {
-        return
-      }
-      return (
         performLogin(
           loginCredentials,
           loginCall,
@@ -101,9 +97,9 @@ export default function Auth({
           dispatch,
           tokenRef
         )
-          // Keep promise perform login for future use....
+          // Keep perform login returing a Promise for future use....
           .then(noop, noop)
-      )
+      }
     },
     [meCall, loginCall, storage, bootstrappedAuth, authenticated, loginLoading]
   )
