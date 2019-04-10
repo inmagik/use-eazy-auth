@@ -33,13 +33,13 @@ use the `meCall` to check if the `user` is still authenticated.
 
 Props:
 
-| Prop          | Type          | Default  | Description |
-| ------------- |-------------|-----|------------|
-|  loginCall |fn => Promise | | A function that return a Promise that resolves an access token and a refresh token (if you want your token to be refreshed)<br /> `(credentials) => Promise.resolve({ accessToken, refreshToken? })`. |
-|  meCall |fn => Promise | | A function that return a Promise that resolves an user object `(accessToken) => Promise.resolve(user)`.  |
-|  refreshTokenCall |fn => Promise | | A function that return a Promise that resolves refreshed tokens `(refreshToken) =>  Promise.resolve({ accessToken, refreshToken })`<br /> called when `meCall` or `callApi` rejects `{ status: 401 }`. |      
-|  storageBackend | object/false | localStorage | The storage where tokens are stored for subsequent acess, acept localStorage like objects, can be async (retrun Promises from methods) use `false` if you want to omit saving tokens.
-|  storageNamespace | string | 'auth' | The key of storage where tokens are stored.         
+| Prop          | Type        | Description |
+| ------------- |-------------|------------|
+|  loginCall |fn => Promise |  A function that return a Promise that resolves an access token and a refresh token (if you want your token to be refreshed)<br /> `(credentials) => Promise.resolve({ accessToken, refreshToken? })`. |
+|  meCall |fn => Promise |  A function that return a Promise that resolves an user object `(accessToken) => Promise.resolve(user)`.  |
+|  refreshTokenCall |fn => Promise |  A function that return a Promise that resolves refreshed tokens `(refreshToken) =>  Promise.resolve({ accessToken, refreshToken })`<br /> called when `meCall` or `callApi` rejects `{ status: 401 }`. |      
+|  storageBackend | object/false | The storage where tokens are stored for subsequent requests, default localStorage is used acept localStorage like objects, can be async (retrun Promises from methods) use `false` if you want to omit saving tokens.
+|  storageNamespace | string | The key of storage where tokens are stored default `auth`.         
              
                
               
