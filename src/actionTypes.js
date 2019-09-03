@@ -12,6 +12,7 @@ export const CLEAR_LOGIN_ERROR = 'CLEAR_LOGIN_ERROR'
 
 export const LOGOUT = 'LOGOUT'
 
+export const TOKEN_REFRESHING = 'TOKEN_REFRESHING'
 export const TOKEN_REFRESHED = 'TOKEN_REFRESHED'
 
 export const UPDATE_USER = 'UPDATE_USER'

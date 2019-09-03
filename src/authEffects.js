@@ -59,10 +59,12 @@ export function bootAuth(
   refreshTokenCall,
   storage,
   dispatch,
-  tokenRef
+  tokenRef,
+  bootRef
 ) {
   // Shortcut to finish boot process default not authenticated
   function endBoot(payload = { authenticated: false }) {
+    bootRef.current = true
     dispatch({ type: BOOTSTRAP_AUTH_END, payload })
   }
 

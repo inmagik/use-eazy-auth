@@ -6,9 +6,11 @@ import React, {
   useReducer,
   useRef,
 } from 'react'
+import { Subject } from 'rxjs'
 import { makeStorage } from './storage'
 import { useConstant } from './helperHooks'
 import { bootAuth, performLogin, performCallApi } from './authEffects'
+import makeCallApiRx from './callApiRx'
 // Reducer stuff
 import authReducer, { initialState } from './reducer'
 import bindActionCreators from './bindActionCreators'
@@ -31,8 +33,22 @@ export default function Auth({
   storageBackend,
   storageNamespace = 'auth',
 }) {
-  const [state, dispatch] = useReducer(authReducer, initialState)
-  // console.log('Render auth', state)
+  const [state, originalDispatch] = useReducer(authReducer, initialState)
+  const [actionObservable, dispatch] = useConstant(() => {
+    const actionSubject = new Subject()
+    const dispatch = action => {
+      originalDispatch(action)
+      actionSubject.next(action)
+    }
+    return [actionSubject.asObservable(), dispatch]
+  })
+
+  // DEBUG ONLY 
+  // useEffect(() => {
+  //   actionObservable.subscribe(action => {
+  //     console.log('<3 Ma Shit!', action)
+  //   })
+  // }, [actionObservable])
 
   const storage = useMemo(() => makeStorage(storageBackend, storageNamespace), [
     storageBackend,
@@ -64,13 +80,23 @@ export default function Auth({
   // This line can't look stupid but is very very important
   const authenticated = !!accessToken
 
+  // Handle the ref of booting status of eazy auth
+  const bootRef = useRef(false)
+
   // Boot Eazy Auth
   useEffect(() => {
     // Ensure auth boostrapped only once
     if (!bootstrappedAuth && !bootstrappingAuth) {
-      bootAuth(meCall, refreshTokenCall, storage, dispatch, tokenRef)
+      bootAuth(meCall, refreshTokenCall, storage, dispatch, tokenRef, bootRef)
     }
-  }, [meCall, refreshTokenCall, storage, bootstrappedAuth, bootstrappingAuth])
+  }, [
+    meCall,
+    refreshTokenCall,
+    storage,
+    bootstrappedAuth,
+    bootstrappingAuth,
+    dispatch,
+  ])
 
   // ~~ Make Actions ~~~
 
@@ -101,18 +127,45 @@ export default function Auth({
           .then(noop, noop)
       }
     },
-    [meCall, loginCall, storage, bootstrappedAuth, authenticated, loginLoading]
+    [
+      meCall,
+      loginCall,
+      storage,
+      bootstrappedAuth,
+      authenticated,
+      loginLoading,
+      dispatch,
+    ]
   )
+
+  const performLogout = useCallback(() => {
+    // Clear token ref
+    tokenRef.current = null
+    // Trigger log out
+    dispatch({ type: LOGOUT, payload: {} })
+    storage.removeTokens()
+  }, [storage, dispatch])
 
   const logout = useCallback(() => {
     if (authenticated) {
-      // Clear token ref
-      tokenRef.current = null
-      // Trigger log out
-      dispatch({ type: LOGOUT, payload: {} })
-      storage.removeTokens()
+      performLogout()
     }
-  }, [storage, authenticated])
+  }, [performLogout, authenticated])
+
+  // Handle the ref of refreshing token status of eazy auth
+  const refreshingRef = useRef(false)
+  const { callAuthApiPromise, callAuthApiObservable } = useConstant(() => {
+    return makeCallApiRx(
+      refreshTokenCall,
+      dispatch,
+      storage,
+      tokenRef,
+      bootRef,
+      refreshingRef,
+      actionObservable,
+      performLogout
+    )
+  })
 
   const callApi = useCallback(
     (apiFn, ...args) =>
@@ -124,7 +177,7 @@ export default function Auth({
         tokenRef,
         ...args
       ),
-    [refreshTokenCall, storage]
+    [refreshTokenCall, storage, dispatch]
   )
 
   // Memoized actions
@@ -132,10 +185,19 @@ export default function Auth({
     () => ({
       ...bindedActionCreators,
       callApi,
+      callAuthApiPromise,
+      callAuthApiObservable,
       login,
       logout,
     }),
-    [login, logout, callApi, bindedActionCreators]
+    [
+      login,
+      logout,
+      callApi,
+      bindedActionCreators,
+      callAuthApiPromise,
+      callAuthApiObservable,
+    ]
   )
 
   // Derived state for auth
