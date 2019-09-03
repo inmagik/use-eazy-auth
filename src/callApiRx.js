@@ -172,9 +172,9 @@ export default function makeCallApiRx(
     if (accessToken !== null && !refreshing && accessToken === badAccessToken) {
       if (typeof error === 'object' && error.status === 401) {
         logout()
-      } else if (typeof error === 'object' && error.status === 403) {
+      } /*else if (typeof error === 'object' && error.status === 403) {
         logout({ fromPermission: true })
-      }
+      }*/
     }
   }
 

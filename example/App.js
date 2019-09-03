@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import Auth, { useLogin, useAuthState, useAuthActions, useAuthUser } from 'use-eazy-auth'
+import { BrowserRouter as Router, Link } from 'react-router-dom'
+import Auth, { useAuthState, useAuthActions, useAuthUser } from 'use-eazy-auth'
+import { GuestRoute, AuthRoute, MaybeAuthRoute } from 'use-eazy-auth/routes'
 
 const loginCall = ({ username, password }) => new Promise((resolve, reject) =>
   (username === 'giova' && password === 'xiboro23')
@@ -8,20 +10,21 @@ const loginCall = ({ username, password }) => new Promise((resolve, reject) =>
 )
 
 const meCall = token => new Promise((resolve, reject) =>
-  (token === 2323)
+  (token === 23)
     ? resolve({ username: 'giova', status: 'Awesome' })
     : reject({ status: 401, error: 'Go out' })
 )
 
 const refreshTokenCall = token => new Promise((resolve, reject) => {
-  const newToken = 23
+  console.log('Refresh!', token)
+  const newToken = 2323
   return (token === 777)
     ? resolve({ accessToken: newToken, refreshToken: 777 })
     : reject({ status: 401, error: 'Go out' })
 })
 
-const authenticatedGetTodos = token => new Promise((resolve, reject) => {
-  console.log('x', token)
+const authenticatedGetTodos = token => () => new Promise((resolve, reject) => {
+  console.log('API Token', token)
   return (token === 23)
     ? resolve([
       'Learn React',
@@ -30,27 +33,21 @@ const authenticatedGetTodos = token => new Promise((resolve, reject) => {
     : reject({ status: 401, error: 'Go out' })
 })
 
-// const Login = () => {
-//   const {
-//     handleSubmit,
-//     username, password,
-//     loginLoading, loginError,
-//   } = useLogin()
-//   return (
-//     <form onSubmit={handleSubmit}>
-//       <div><input placeholder='@username' type='text' {...username} /></div>
-//       <div><input placeholder='password' type='password' {...password} /></div>
-//       <button disabled={loginLoading}>{!loginLoading ? 'Login!' : 'Logged in...'}</button>
-//       {loginError && <div>Bad combination of username and password</div>}
-//     </form>
-//   )
-// }
 const Login = () => {
   const { loginLoading, loginError } = useAuthState()
   const { login, clearLoginError } = useAuthActions()
 
+  // login credentials state
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+
+  // clear login error on unmount
+  useEffect(() => () => clearLoginError(), [clearLoginError])
+
+  // clear login error when username or password changes
+  useEffect(() => {
+    clearLoginError()
+  }, [username, password, clearLoginError])
 
   return (
     <form onSubmit={e => {
@@ -64,10 +61,7 @@ const Login = () => {
           placeholder='@username'
           type='text'
           value={username}
-          onChange={e => {
-            clearLoginError()
-            setUsername(e.target.value)
-          }}
+          onChange={e => setUsername(e.target.value)}
         />
       </div>
       <div>
@@ -75,10 +69,7 @@ const Login = () => {
           placeholder='password'
           type='password'
           value={password}
-          onChange={e => {
-            clearLoginError()
-            setPassword(e.target.value)
-          }}
+          onChange={e => setPassword(e.target.value)}
         />
       </div>
       <button disabled={loginLoading}>{!loginLoading ? 'Login!' : 'Logged in...'}</button>
@@ -90,11 +81,11 @@ const Login = () => {
 const Home = () => {
   const [todos, setTodos] = useState([])
   const { user } = useAuthUser()
-  const { logout, callApi } = useAuthActions()
+  const { logout, callAuthApiPromise } = useAuthActions()
 
   useEffect(() => {
-    callApi(authenticatedGetTodos).then(todos => setTodos(todos))
-  }, [callApi])
+    callAuthApiPromise(authenticatedGetTodos).then(todos => setTodos(todos))
+  }, [callAuthApiPromise])
 
   return (
     <div>
@@ -112,13 +103,26 @@ const Home = () => {
   )
 }
 
-const Screens = () => {
-  const { authenticated, bootstrappedAuth } = useAuthState()
-  if (!bootstrappedAuth) {
-    return <div>Just logged in wait....</div>
-  }
-  return authenticated ? <Home /> : <Login />
+function About() {
+  const { user } = useAuthUser()
+  const { logout } = useAuthActions()
+  return (
+    <div>
+      <h1>Eazy Auth Was Good</h1>
+      {user && <h2>Bella {user.username}</h2>}
+
+      <button onClick={logout}>Logout</button>
+    </div>
+  )
 }
+
+// const Screens = () => {
+//   const { authenticated, bootstrappedAuth } = useAuthState()
+//   if (!bootstrappedAuth) {
+//     return <div>Just logged in wait....</div>
+//   }
+//   return authenticated ? <Home /> : <Login />
+// }
 
 const App = () => (
   <Auth
@@ -126,7 +130,16 @@ const App = () => (
     meCall={meCall}
     refreshTokenCall={refreshTokenCall}
   >
-    <Screens />
+    <Router>
+      <div>
+        <Link to={'/'}>Home</Link>{' | '}
+        <Link to={'/about'}>About</Link>{' | '}
+        <Link to={'/login'}>Login</Link>{' | '}
+      </div>
+      <GuestRoute path='/login' component={Login} />
+      <AuthRoute path='/' exact component={Home} />
+      <MaybeAuthRoute path='/about' exact component={About} />
+    </Router>
   </Auth>
 )
 
