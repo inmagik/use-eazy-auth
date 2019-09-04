@@ -1,15 +1,27 @@
 import babel from 'rollup-plugin-babel'
 import pkg from './package.json'
 
-export default {
-  input: 'src/index.js',
+const vendors = []
+  // Make all external dependencies to be exclude from rollup
+  .concat(
+    Object.keys(pkg.dependencies || {}),
+    Object.keys(pkg.peerDependencies || {}),
+    'rxjs/operators',
+  )
+
+export default ['esm', 'cjs'].map(format => ({
+  input: {
+    'index': 'src/index.js',
+    'routes': 'src/routes/index.js',
+  },
   output: [
-    { file: pkg.main, format: 'cjs', exports: 'named' },
-    { file: pkg.module, format: 'esm' },
+    {
+      dir: 'lib',
+      entryFileNames: '[name].[format].js',
+      exports: 'named',
+      format
+    }
   ],
-  external: [
-    ...Object.keys(pkg.dependencies || {}),
-    ...Object.keys(pkg.peerDependencies || {}),
-  ],
+  external: vendors,
   plugins: [babel({ exclude: 'node_modules/**' })],
-}
+}))

@@ -1,6 +1,6 @@
 {
   "name": "use-eazy-auth",
-  "version": "0.1.0",
+  "version": "0.2.68",
   "sideEffects": false,
   "description": "React hooks for handle auth stuff",
   "main": "./lib/index.cjs.js",
@@ -36,7 +36,8 @@
   },
   "peerDependencies": {
     "react": "^16.8.0",
-    "react-dom": "^16.8.0"
+    "react-dom": "^16.8.0",
+    "react-router-dom": "^5.0.0"
   },
   "devDependencies": {
     "@babel/core": "^7.4.3",

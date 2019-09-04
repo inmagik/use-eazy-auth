@@ -1,0 +1,6 @@
+{
+  "name": "use-eazy-auth/routes",
+  "private": true,
+  "main": "../lib/routes.cjs.js",
+  "module": "../lib/routes.esm.js"
+}

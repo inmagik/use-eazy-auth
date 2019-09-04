@@ -27,6 +27,7 @@ const noop = () => {}
 
 export default function Auth({
   children,
+  render,
   loginCall,
   meCall,
   refreshTokenCall,
@@ -42,13 +43,6 @@ export default function Auth({
     }
     return [actionSubject.asObservable(), dispatch]
   })
-
-  // DEBUG ONLY 
-  // useEffect(() => {
-  //   actionObservable.subscribe(action => {
-  //     console.log('<3 Ma Shit!', action)
-  //   })
-  // }, [actionObservable])
 
   const storage = useMemo(() => makeStorage(storageBackend, storageNamespace), [
     storageBackend,
@@ -224,7 +218,9 @@ export default function Auth({
     <AuthActionsContext.Provider value={actions}>
       <AuthStateContext.Provider value={authState}>
         <AuthUserContext.Provider value={userState}>
-          {children}
+          {typeof render === 'function'
+            ? render(actions, authState, userState)
+            : children}
         </AuthUserContext.Provider>
       </AuthStateContext.Provider>
     </AuthActionsContext.Provider>

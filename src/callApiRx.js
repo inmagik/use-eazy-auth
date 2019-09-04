@@ -268,6 +268,7 @@ export default function makeCallApiRx(
     } else if (action.type === TOKEN_REFRESHED) {
       const { payload } = action
       refreshingRef.current = false
+      tokenRef.current = payload
       dispatch(action)
       storage.setTokens(payload)
     } else if (action.type === LOGOUT) {
