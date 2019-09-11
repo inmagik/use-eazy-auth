@@ -1,15 +1,15 @@
 {
   "name": "use-eazy-auth",
-  "version": "1.0.0-rc1",
+  "version": "1.0.0-rc2",
   "sideEffects": false,
   "description": "React hooks for handle auth stuff",
   "main": "./lib/index.cjs.js",
   "module": "./lib/index.esm.js",
-  "repository": "https://github.com/gffuma/use-eazy-auth",
+  "repository": "https://github.com/inmagik/use-eazy-auth",
   "author": "Giovanni Fumagalli <fumagalli.gf@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/gffuma/use-eazy-auth/issues"
+    "url": "https://github.com/inmagik/use-eazy-auth/issues"
   },
   "keywords": [
     "react",
@@ -60,11 +60,11 @@
     "style-loader": "^0.23.1",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.3.0",
-    "webpack-dev-server": "^3.2.1"
+    "webpack-dev-server": "^3.2.1",
+    "@testing-library/jest-dom": "^4.1.0",
+    "@testing-library/react": "^9.1.4"
   },
   "dependencies": {
-    "@testing-library/jest-dom": "^4.1.0",
-    "@testing-library/react": "^9.1.4",
     "rxjs": "^6.5.2"
   }
 }
