@@ -33,13 +33,16 @@ const checkStorage = storageCandidate => {
   return true
 }
 
-// Storage protocol:
-// thinked 2 be always async (not now XD) will return Promises
-// getTokens LS -> User
-// setTokens User -> LS
-// removeTokens rm -rf LS
-// FIXME: There is a not a bug but no simmetrical store between get and set
-// check ALL the keys to be compilant and trouble \w undefined and default values....
+/**
+ * makeStorage creates a wrapper around a compatible StorageLike object
+ * The wrapper solves two tasks
+ * - serialize and deserialize the token bag to string
+ * - return a consistent Promise-base interface towards the store
+ *     in particular, some stores like ReactNative AsyncStorage are asynchronous, 
+ *     while window.localStorage is synchronous, we want to uniform these behaviours
+ * @param {any} givenStorageBackend 
+ * @param {string} storageNamespace 
+ */
 export const makeStorage = (givenStorageBackend, storageNamespace) => {
   let storageBackend = noopStorageBackend
   if (
