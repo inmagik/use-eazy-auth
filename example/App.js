@@ -129,6 +129,7 @@ const App = () => (
     loginCall={loginCall}
     meCall={meCall}
     refreshTokenCall={refreshTokenCall}
+    storageBackend={false}
   >
     <Router>
       <div>

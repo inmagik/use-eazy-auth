@@ -900,4 +900,48 @@ describe('Auth', () => {
     )
     expect(getByTestId('status').textContent).toBe('Awesome')
   })
+
+  it('should allow to disable storage of tokens', async () => {
+    // Fake da calls
+    const loginCall = jest.fn()
+    const meCall = jest.fn()
+
+    const storeGet = jest.fn()
+    const storeSet = jest.fn()
+    const storeClear = jest.fn()
+
+    // Fake an empty local storage
+    const localStorageMock = {
+      getItem: storeGet,
+      setItem: storeSet,
+      removeItem: storeClear,
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const AuthObserver = () => {
+      const { bootstrappedAuth } = useAuthState()
+      if (!bootstrappedAuth) {
+        return null
+      } else {
+        return <p data-testid="auth-booted">Auth initialized!</p>
+      }
+    }
+
+    const App = () => (
+      <Auth loginCall={loginCall} meCall={meCall} storageBackend={false}>
+        <AuthObserver />
+      </Auth>
+    )
+
+    const { findByTestId } = render(<App />)
+
+    await findByTestId("auth-booted")
+
+    expect(storeGet).not.toBeCalled()
+    expect(storeSet).not.toBeCalled()
+    expect(storeClear).not.toBeCalled()
+  })
 })

@@ -1,7 +1,7 @@
 const noopStorageBackend = {
   getItem: () => null,
-  setItem: () => {},
-  removeItem: () => {},
+  setItem: () => { },
+  removeItem: () => { },
 }
 
 // If a promise return them if other return the value as resolved promise ...
@@ -17,6 +17,22 @@ function getResolvedOrPromise(value) {
   return Promise.resolve(value)
 }
 
+const checkStorage = storageCandidate => {
+  if (typeof storageCandidate.getItem !== "function") {
+    console.error("[use-eazy-auth] Invalid storage backend, it lacks function getItem, no storage will be used")
+    return false
+  }
+  if (typeof storageCandidate.setItem !== "function") {
+    console.error("[use-eazy-auth] Invalid storage backend, it lacks function setItem, no storage will be used")
+    return false
+  }
+  if (typeof storageCandidate.removeItem !== "function") {
+    console.error("[use-eazy-auth] Invalid storage backend, it lacks function removeItem, no storage will be used")
+    return false
+  }
+  return true
+}
+
 // Storage protocol:
 // thinked 2 be always async (not now XD) will return Promises
 // getTokens LS -> User
@@ -25,7 +41,7 @@ function getResolvedOrPromise(value) {
 // FIXME: There is a not a bug but no simmetrical store between get and set
 // check ALL the keys to be compilant and trouble \w undefined and default values....
 export const makeStorage = (givenStorageBackend, storageNamespace) => {
-  let storageBackend
+  let storageBackend = noopStorageBackend
   if (
     typeof givenStorageBackend === 'undefined' ||
     givenStorageBackend === null
@@ -36,11 +52,11 @@ export const makeStorage = (givenStorageBackend, storageNamespace) => {
     ) {
       // If provided by environment use local storage
       storageBackend = window.localStorage
-    } else {
-      // Use a noop storage backend (don't store anything)
-      storageBackend = noopStorageBackend
     }
-  } else {
+  } else if (
+    givenStorageBackend !== false &&
+    checkStorage(givenStorageBackend)
+  ) {
     // When given use provided storage backend
     storageBackend = givenStorageBackend
   }
@@ -63,13 +79,15 @@ export const makeStorage = (givenStorageBackend, storageNamespace) => {
     )
   }
 
-  const setTokens = tokens =>
-    getResolvedOrPromise(
+  const setTokens = tokens => {
+    return getResolvedOrPromise(
       storageBackend.setItem(storageNamespace, JSON.stringify(tokens))
     )
+  }
 
-  const removeTokens = () =>
-    getResolvedOrPromise(storageBackend.removeItem(storageNamespace))
+  const removeTokens = () => {
+    return getResolvedOrPromise(storageBackend.removeItem(storageNamespace))
+  }
 
   return {
     setTokens,
