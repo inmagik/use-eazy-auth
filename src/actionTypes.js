@@ -1,6 +1,3 @@
-// ~~~ Was cool but break the minification
-// const NS = '~at-the-very-end-this-namespace-is-not-needed-at-all@'
-
 export const BOOTSTRAP_AUTH_START = 'BOOTSTRAP_AUTH_START'
 export const BOOTSTRAP_AUTH_END = 'BOOTSTRAP_AUTH_END'
 

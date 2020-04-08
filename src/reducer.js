@@ -7,7 +7,7 @@ import {
   // Clear the login error
   CLEAR_LOGIN_ERROR,
 
-  // Boostrapping auth / getting tokens from nowhere...
+  // Auth initialization
   BOOTSTRAP_AUTH_START,
   BOOTSTRAP_AUTH_END,
 
@@ -17,7 +17,7 @@ import {
   // Update user data
   UPDATE_USER,
 
-  // Path user data
+  // Patch user data
   PATCH_USER,
 
   // Logout action
@@ -25,7 +25,7 @@ import {
 } from './actionTypes'
 
 export const initialState = {
-  // Is auth boooted?
+  // Is auth initialized?
   bootstrappingAuth: false,
   bootstrappedAuth: false,
   // Current logged user
@@ -37,7 +37,6 @@ export const initialState = {
   // Login state
   loginLoading: false,
   loginError: null,
-  // logoutFromPermission: false,
 }
 
 const authReducer = (
@@ -127,9 +126,8 @@ const authReducer = (
     case LOGOUT:
       return {
         ...initialState,
-        // Logout doesn't mean re check tokens in ls and so on...
+        // Logout doesn't mean reinitialization
         bootstrappedAuth: previousState.bootstrappedAuth,
-        // logoutFromPermission: payload.fromPermission,
       }
     default:
       return previousState

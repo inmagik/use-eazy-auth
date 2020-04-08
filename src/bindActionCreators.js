@@ -1,4 +1,3 @@
-// Just rubbed from Redux
 // https://raw.githubusercontent.com/reduxjs/redux/master/src/bindActionCreators.js
 
 function bindActionCreator(actionCreator, dispatch) {
