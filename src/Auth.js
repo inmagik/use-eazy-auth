@@ -34,12 +34,23 @@ export default function Auth({
   storageBackend,
   storageNamespace = 'auth',
 }) {
+  const mountedRef = useRef(true)
   const [state, originalDispatch] = useReducer(authReducer, initialState)
   const [actionObservable, dispatch] = useConstant(() => {
     const actionSubject = new Subject()
     const dispatch = action => {
-      originalDispatch(action)
-      actionSubject.next(action)
+      // TODO: This just works ... BUT ...
+      // bootAuth and performLogin are not implement in a way
+      // that make easy to cancel all related tasks ...
+      // so the following workaround protecte use from
+      // "Can't perform a React state update on an unmounted component"
+      // but if <Auth /> is unmounted to early all related side effects
+      // still in place so in another life rewrite all this with RxJS
+      // so unsub from them should be easy .....
+      if (mountedRef.current) {
+        originalDispatch(action)
+        actionSubject.next(action)
+      }
     }
     return [actionSubject.asObservable(), dispatch]
   })
@@ -148,7 +159,11 @@ export default function Auth({
 
   // Handle the ref of refreshing token status of eazy auth
   const refreshingRef = useRef(false)
-  const { callAuthApiPromise, callAuthApiObservable } = useConstant(() => {
+  const {
+    callAuthApiPromise,
+    callAuthApiObservable,
+    unsubscribe
+  } = useConstant(() => {
     return makeCallApiRx(
       refreshTokenCall,
       dispatch,
@@ -213,6 +228,14 @@ export default function Auth({
     }),
     [state.user, accessToken]
   )
+
+  useEffect(() => {
+    return () => {
+      // Goodbye Space Cowboy
+      unsubscribe()
+      mountedRef.current = false
+    }
+  }, [unsubscribe])
 
   return (
     <AuthActionsContext.Provider value={actions}>

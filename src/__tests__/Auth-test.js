@@ -944,4 +944,60 @@ describe('Auth', () => {
     expect(storeSet).not.toBeCalled()
     expect(storeClear).not.toBeCalled()
   })
+
+  it('should not set state on umounted component', async () => {
+    // Fake da calls
+    const loginCall = jest.fn()
+    // Hack for manual resolve the me promise
+    let resolveMe
+    const meCall = jest.fn(
+      () =>
+        new Promise(resolve => {
+          resolveMe = resolve
+        })
+    )
+
+    // Fake a good storage
+    const resolvesGetItem = []
+    const localStorageMock = {
+      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const Eazy = () => {
+      return (
+        <div>
+          <h1>HELLO!</h1>
+        </div>
+      )
+    }
+
+    const App = () => (
+      <Auth loginCall={loginCall} meCall={meCall}>
+        <Eazy />
+      </Auth>
+    )
+
+    const { unmount } = render(<App />)
+
+    await act(async () => {
+      resolvesGetItem[0](JSON.stringify({ accessToken: 23 }))
+    })
+
+    await act(async () => {
+      unmount()
+    })
+
+    const spyConsoleError = jest.spyOn(console, 'error')
+    await act(async () => {
+      resolveMe({ username: 'Gio Va' })
+    })
+
+    expect(spyConsoleError).not.toHaveBeenCalled()
+  })
 })

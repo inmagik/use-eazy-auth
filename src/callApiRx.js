@@ -244,10 +244,8 @@ export default function makeCallApiRx(
       })
   }
 
-  // TODO: Unsub ....
-
   // GioVa 1312 illegal boy
-  actionObservable
+  const firstBootSub = actionObservable
     .pipe(
       filter(action => action.type === BOOTSTRAP_AUTH_END),
       take(1)
@@ -256,13 +254,13 @@ export default function makeCallApiRx(
       refreshRoutine.connect()
     })
 
-  actionObservable
+  const logoutSub = actionObservable
     .pipe(filter(action => action.type === LOGOUT))
     .subscribe(() => {
       refreshingRef.current = false
     })
 
-  refreshRoutine.subscribe(action => {
+  const refreshSub = refreshRoutine.subscribe(action => {
     if (action.type === TOKEN_REFRESHING) {
       refreshingRef.current = true
     } else if (action.type === TOKEN_REFRESHED) {
@@ -277,5 +275,11 @@ export default function makeCallApiRx(
     }
   })
 
-  return { callAuthApiObservable, callAuthApiPromise }
+  function unsubscribe() {
+    firstBootSub.unsubscribe()
+    logoutSub.unsubscribe()
+    refreshSub.unsubscribe()
+  }
+
+  return { callAuthApiObservable, callAuthApiPromise, unsubscribe }
 }
