@@ -106,6 +106,22 @@ const App = () => (
 
 ```
 
+You can also use the `render` prop.
+
+```js
+function App() {
+  return (
+    <Auth
+      loginCall={loginCall}
+      meCall={meCall}
+      storageBackend={storageBackend}
+      storageNamespace='my-auth'
+      render={(authActions, authState, userState) => /* render my children */}
+    />
+  )
+}
+```
+
 ### `useAuthState()` hook
 
 This hooks returns the current auth state. The auth state is the operational state of the library, which can tell you if some operation is in progress, like initialization or login. The state object is a plain object with the following properties
