@@ -39,7 +39,7 @@ const Login = () => {
   const { loginLoading, loginError } = useAuthState()
   return (
     <form
-      onSubmit={e => {
+      onSubmit={(e) => {
         e.preventDefault()
         login({ username: 'giova', password: 'xiboro23' })
       }}
@@ -61,7 +61,7 @@ describe('Auth', () => {
     // Fake an empty local storage
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -101,7 +101,7 @@ describe('Auth', () => {
     let resolveMe
     const meCall = jest.fn(
       () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           resolveMe = resolve
         })
     )
@@ -109,7 +109,7 @@ describe('Auth', () => {
     // Fake a good storage
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -180,7 +180,7 @@ describe('Auth', () => {
     // Fake a good storage
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -241,14 +241,14 @@ describe('Auth', () => {
     let resolveLogin
     const loginCall = jest.fn(
       () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           resolveLogin = resolve
         })
     )
     let resolveMe
     const meCall = jest.fn(
       () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           resolveMe = resolve
         })
     )
@@ -256,7 +256,7 @@ describe('Auth', () => {
     // Fake an empty local storage
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -347,7 +347,7 @@ describe('Auth', () => {
     // Fake an empty local storage
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -419,7 +419,7 @@ describe('Auth', () => {
     let resolveMe
     const meCall = jest.fn(
       () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           resolveMe = resolve
         })
     )
@@ -427,7 +427,7 @@ describe('Auth', () => {
     // Fake a good storage
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -497,21 +497,20 @@ describe('Auth', () => {
     let resolveMe
     const meCall = jest.fn(
       () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           resolveMe = resolve
         })
     )
-    const getUserStatus = jest.fn(
-      () =>
-        new Promise(resolve => {
-          resolve('Awesome')
-        })
+    const getUserStatus = jest.fn(() => () =>
+      new Promise((resolve) => {
+        resolve('Awesome')
+      })
     )
 
     // Fake a good storage
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -521,11 +520,11 @@ describe('Auth', () => {
     })
 
     const MaHomeCalled = () => {
-      const { callApi } = useAuthActions()
+      const { callAuthApiPromise } = useAuthActions()
       const [status, setStatus] = useState('')
       useEffect(() => {
-        callApi(getUserStatus).then(setStatus)
-      }, [callApi])
+        callAuthApiPromise(getUserStatus).then(setStatus)
+      }, [callAuthApiPromise])
 
       return (
         <div>
@@ -575,23 +574,24 @@ describe('Auth', () => {
     let resolveMe
     const meCall = jest.fn(
       () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           resolveMe = resolve
         })
     )
-    const getUserStatus = jest.fn(
-      () =>
-        new Promise((resolve, reject) => {
-          reject({ status: 401 })
-        })
+    const getUserStatus = jest.fn(() => () =>
+      new Promise((resolve, reject) => {
+        reject({ status: 401 })
+      })
     )
 
-    const getUserStatus2 = jest.fn(() => new Promise(resolve => resolve('XD')))
+    const getUserStatus2 = jest.fn(() => () =>
+      new Promise((resolve) => resolve('XD'))
+    )
 
     // Fake a good storage
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -601,11 +601,11 @@ describe('Auth', () => {
     })
 
     const MaHomeCalled = () => {
-      const { callApi } = useAuthActions()
+      const { callAuthApiPromise } = useAuthActions()
       const [status, setStatus] = useState('')
       useEffect(() => {
-        callApi(getUserStatus).then(setStatus, () => {})
-      }, [callApi])
+        callAuthApiPromise(getUserStatus).then(setStatus, () => {})
+      }, [callAuthApiPromise])
 
       return (
         <div>
@@ -615,13 +615,13 @@ describe('Auth', () => {
     }
 
     const BananaSplit = () => {
-      const { callApi } = useAuthActions()
+      const { callAuthApiPromise } = useAuthActions()
       return (
         <div>
           <button
             data-testid="btn-call"
             onClick={() => {
-              callApi(getUserStatus2)
+              callAuthApiPromise(getUserStatus2)
             }}
           >
             XD
@@ -662,13 +662,15 @@ describe('Auth', () => {
     // The api fn provided should be called \w token
     expect(getUserStatus).toHaveBeenLastCalledWith(23)
 
-    // // Check perform logout
+    // Check perform logout
     expect(getByTestId('authenticated').textContent).toBe('Anon')
     expect(window.localStorage.removeItem).toHaveBeenLastCalledWith('auth')
 
     fireEvent.click(getByTestId('btn-call'))
     // Check callApi call with empty token...
-    expect(getUserStatus2).toHaveBeenLastCalledWith(null)
+    process.nextTick(() => {
+      expect(getUserStatus2).toHaveBeenLastCalledWith(null)
+    })
   })
 
   it('should try to refresh token on boot when me give 401', async () => {
@@ -694,7 +696,7 @@ describe('Auth', () => {
     // Fake a stroage \w a bad access token and good refresh
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -731,10 +733,12 @@ describe('Auth', () => {
     expect(getByTestId('authenticated').textContent).toBe('Anon')
 
     await act(async () => {
-      resolvesGetItem[0](JSON.stringify({
-        accessToken: 23,
-        refreshToken: 777,
-      }))
+      resolvesGetItem[0](
+        JSON.stringify({
+          accessToken: 23,
+          refreshToken: 777,
+        })
+      )
     })
 
     // Check local stroage to have been called \w the default key auth
@@ -786,18 +790,17 @@ describe('Auth', () => {
     let resolveMe
     const meCall = jest.fn(
       () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           resolveMe = resolve
         })
     )
     let resolveApi
     let rejectApi
-    const getUserStatus = jest.fn(
-      () =>
-        new Promise((resolve, reject) => {
-          resolveApi = resolve
-          rejectApi = reject
-        })
+    const getUserStatus = jest.fn(() => () =>
+      new Promise((resolve, reject) => {
+        resolveApi = resolve
+        rejectApi = reject
+      })
     )
     let resolveRefresh
     const refreshTokenCall = jest.fn(
@@ -810,7 +813,7 @@ describe('Auth', () => {
     // Fake a good storage
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }
@@ -820,11 +823,11 @@ describe('Auth', () => {
     })
 
     const MaHomeCalled = () => {
-      const { callApi } = useAuthActions()
+      const { callAuthApiPromise } = useAuthActions()
       const [status, setStatus] = useState('')
       useEffect(() => {
-        callApi(getUserStatus).then(setStatus)
-      }, [callApi])
+        callAuthApiPromise(getUserStatus).then(setStatus)
+      }, [callAuthApiPromise])
 
       return (
         <div>
@@ -856,10 +859,12 @@ describe('Auth', () => {
     const { getByTestId } = render(<App />)
 
     await act(async () => {
-      resolvesGetItem[0](JSON.stringify({
-        accessToken: 23,
-        refreshToken: 777,
-      }))
+      resolvesGetItem[0](
+        JSON.stringify({
+          accessToken: 23,
+          refreshToken: 777,
+        })
+      )
     })
     // Auth booted
 
@@ -881,14 +886,16 @@ describe('Auth', () => {
     // Now should we start the refresh
     expect(refreshTokenCall).toHaveBeenLastCalledWith(777)
     // Resolve fake refresh call
-    resolveRefresh({ accessToken: 2323, refreshToken: 69 })
+    await act(async () => {
+      resolveRefresh({ accessToken: 2323, refreshToken: 69 })
+    })
     // Wait for refresh to be processed ...
     await refreshTokenCall.mock.results[0].value
     // Check re-call API \w new token
     expect(getUserStatus).toHaveBeenNthCalledWith(2, 2323)
     // Resolve fake API
     await act(async () => {
-      resolveApi('Awesome')
+      await resolveApi('Awesome')
     })
     // Check token saved in storage
     expect(window.localStorage.setItem).toHaveBeenLastCalledWith(
@@ -938,7 +945,7 @@ describe('Auth', () => {
 
     const { findByTestId } = render(<App />)
 
-    await findByTestId("auth-booted")
+    await findByTestId('auth-booted')
 
     expect(storeGet).not.toBeCalled()
     expect(storeSet).not.toBeCalled()
@@ -952,7 +959,7 @@ describe('Auth', () => {
     let resolveMe
     const meCall = jest.fn(
       () =>
-        new Promise(resolve => {
+        new Promise((resolve) => {
           resolveMe = resolve
         })
     )
@@ -960,7 +967,7 @@ describe('Auth', () => {
     // Fake a good storage
     const resolvesGetItem = []
     const localStorageMock = {
-      getItem: jest.fn(() => new Promise(r => resolvesGetItem.push(r))),
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
       removeItem: jest.fn(),
     }

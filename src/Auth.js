@@ -9,7 +9,7 @@ import React, {
 import { Subject } from 'rxjs'
 import { makeStorage } from './storage'
 import { useConstant } from './helperHooks'
-import { bootAuth, performLogin, performCallApi } from './authEffects'
+import { bootAuth, performLogin } from './authEffects'
 import makeCallApiRx from './callApiRx'
 // Reducer stuff
 import authReducer, { initialState } from './reducer'
@@ -176,24 +176,10 @@ export default function Auth({
     )
   })
 
-  const callApi = useCallback(
-    (apiFn, ...args) =>
-      performCallApi(
-        apiFn,
-        refreshTokenCall,
-        storage,
-        dispatch,
-        tokenRef,
-        ...args
-      ),
-    [refreshTokenCall, storage, dispatch]
-  )
-
   // Memoized actions
   const actions = useMemo(
     () => ({
       ...bindedActionCreators,
-      callApi,
       callAuthApiPromise,
       callAuthApiObservable,
       login,
@@ -202,7 +188,6 @@ export default function Auth({
     [
       login,
       logout,
-      callApi,
       bindedActionCreators,
       callAuthApiPromise,
       callAuthApiObservable,

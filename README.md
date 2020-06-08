@@ -176,9 +176,6 @@ const Login = () => {
 ### `useAuthActions()` hook
 This hook allows to invoke some auth related behaviours. It returns a plain JavaScript object whose properties are functions.
 
-* **callApi**:
-  This function performs an authenticated API call. The first parameter is the asynchronous function that implements the real api call (use XHR, Axios, SuperAgent or whatever you like inside). Any additional parameter will be forwarded as a parameter to the api call function. The api call function will also receive, as its last parameter, the current access token. The api call must return a promise. If all is fine, that promise is expected to resolve. In case it rejects, the rejection value must be an object with a status property carrying the status code of the request. A 401 code will trigger the refresh token operation (if available) and repeat the api call invocation with the new token. If even this second call is rejected, the user will be logged out.
-
 * **callAuthApiPromise**
   This function performs an authenticated API call. The first parameter is a factory function (a function which returns a fucntion) that is expected to create the real api call function (i.e. the function that implements the real api call, you can use XHR, Axios, SuperAgent or whatever you like inside this). The factory function is invoked with the access token, and is expected to return again a function - the api call function. Any additional parameter supplied to the **callAuthApiPromise** will be used as a parameter to invoke the api call function. The api call must return a promise. If all is fine, that promise is expected to resolve. In case it rejects, the rejection value must be an object with a status property carrying the status code of the request. A 401 code will trigger the refresh token operation (if available) and repeat the api call invocation with the new token. If even this second call is rejected, the user will be logged out.
 
@@ -208,7 +205,7 @@ Here is some example
 import React, { useState, useEffect } from 'react'
 import { useAuthActions } from 'use-eazy-auth'
 
-const authenticatedGetTodos = (category, token) => new Promise((resolve, reject) => {
+const authenticatedGetTodos = (token) => (category) => new Promise((resolve, reject) => {
   return (token === 23)
     ? resolve([
       'Learn React',
@@ -219,12 +216,12 @@ const authenticatedGetTodos = (category, token) => new Promise((resolve, reject)
 
 const Home = () => {
   const [todos, setTodos] = useState([])
-  const { logout, callApi } = useAuthActions()
+  const { logout, callAuthApiPromise } = useAuthActions()
 
   useEffect(() => {
-    callApi(authenticatedGetTodos, 'all')
+    callAuthApiPromise(authenticatedGetTodos, 'all')
       .then(todos => setTodos(todos))
-  }, [callApi])
+  }, [callAuthApiPromise])
 
   return (
     <div>

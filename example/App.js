@@ -23,8 +23,9 @@ const refreshTokenCall = token => new Promise((resolve, reject) => {
     : reject({ status: 401, error: 'Go out' })
 })
 
-const authenticatedGetTodos = token => () => new Promise((resolve, reject) => {
+const authenticatedGetTodos = (token) => (category) => new Promise((resolve, reject) => {
   console.log('API Token', token)
+  console.log('Todos OF', category)
   return (token === 23)
     ? resolve([
       'Learn React',
@@ -89,7 +90,7 @@ const Home = () => {
   const { logout, callAuthApiPromise } = useAuthActions()
 
   useEffect(() => {
-    callAuthApiPromise(authenticatedGetTodos).then(todos => setTodos(todos))
+    callAuthApiPromise(authenticatedGetTodos, 'all').then(todos => setTodos(todos))
   }, [callAuthApiPromise])
 
   return (

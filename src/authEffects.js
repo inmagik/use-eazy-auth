@@ -4,8 +4,6 @@ import {
   LOGIN_LOADING,
   LOGIN_SUCCESS,
   LOGIN_FAILURE,
-  TOKEN_REFRESHED,
-  LOGOUT,
 } from './actionTypes'
 
 function makeCallWithRefresh(refreshTokenCall, accessToken, refreshToken) {
@@ -167,53 +165,4 @@ export function performLogin(
       }, loginFailed)
     }, loginFailed)
   })
-}
-
-export function performCallApi(
-  apiFn,
-  refreshTokenCall,
-  storage,
-  dispatch,
-  tokenRef,
-  ...args
-) {
-  // Get the actual token
-  const { accessToken = null, refreshToken = null } = tokenRef.current || {}
-
-  // Prepare the ~ M A G I K ~ Api call with refresh
-  const callWithRefresh = makeCallWithRefresh(
-    refreshTokenCall,
-    accessToken,
-    refreshToken
-  )
-  // console.log('SACRO TOKEN', accessToken)
-  return callWithRefresh(apiFn, ...args).then(
-    responseWithRefresh => {
-      const [response, refreshedTokens] = responseWithRefresh
-
-      if (refreshedTokens) {
-        dispatch({
-          type: TOKEN_REFRESHED,
-          payload: refreshedTokens,
-        })
-        storage.setTokens(refreshedTokens)
-      }
-
-      return response
-    },
-    error => {
-      if (error.status === 401) {
-        // NOTE: Not sure if is really a good idea but i think
-        // this can't prevetn some edge cases
-        if (tokenRef.current && accessToken === tokenRef.current.accessToken) {
-          // Clear token ref
-          tokenRef.current = null
-          // Trigger log out
-          dispatch({ type: LOGOUT, payload: {} })
-          storage.removeTokens()
-        }
-      }
-      return Promise.reject(error)
-    }
-  )
 }
