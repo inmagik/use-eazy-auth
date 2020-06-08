@@ -6,9 +6,6 @@ React components and hooks to deal with token based authentication
 
 This project takes the main concepts and algorithms (but also the name) from the [eazy-auth](https://github.com/inmagik/eazy-auth) library, and aims at providing equivalent functionality in contexts where the usage of `eazy-auth` with its strong dependency on `redux` and `redux-saga` is just too constraining.
 
-## Warning
-We are working on reaching a 1.0 release version, but until that we cannot guarantee the stability of the API.
-
 ## Installation
 ```
 yarn add use-eazy-auth
@@ -193,6 +190,15 @@ This hook allows to invoke some auth related behaviours. It returns a plain Java
 
 * **logout**
   This function triggers a logout operation. This means clearing the stored tokens and set the library `authenticated` state to `false`. No api call is performed here.
+
+* **clearLoginError**
+  This function clear the current login error.
+
+* **updateUser**
+  This function update the current auth user with given *User* object.
+
+* **patchUser**
+  This function shallow merge the given *User* object with current *User* object.
 
 All these functions are stable across renders, so it is safe to add them as dependencies of some `useEffect` or `useMemo`, they will never trigger any unnecessary re-renders.
 
