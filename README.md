@@ -1,5 +1,5 @@
 # use-eazy-auth
-[![Build Status](https://api.travis-ci.com/gffuma/use-eazy-auth.svg?branch=master)](https://travis-ci.com/gffuma/use-eazy-auth/)
+[![Build Status](https://travis-ci.com/inmagik/use-eazy-auth.svg?branch=master)](https://travis-ci.com/inmagik/use-eazy-auth)
 [![npm version](https://badge.fury.io/js/use-eazy-auth.svg)](https://www.npmjs.com/package/use-eazy-auth)
 
 React components and hooks to deal with token based authentication
@@ -29,10 +29,10 @@ This concepts are common to the majority of token based authentication system, e
 The `<Auth />` component creates React contexts that are used by any hook, so it is mandatory to make it a common ancestor for all components that need to deal with authentication, and advisable to put it as near as possible to the root of the React application tree.
 
 The following properties are required:
-* **loginCall**: the login call implements the process of acquiring a valid token, usually by means of some credentials (in the majority of cases, this is just a *username*, *password* pair, but it is not required). The signature of this function must be 
+* **loginCall**: the login call implements the process of acquiring a valid token, usually by means of some credentials (in the majority of cases, this is just a *username*, *password* pair, but it is not required). The signature of this function must be
 
   ```js
-    (credentials: any) => 
+    (credentials: any) =>
       Promise<{ accessToken: string, refreshToken?: string }, any>
   ```
 
@@ -44,11 +44,11 @@ The following properties are required:
     (accessToken: string) => Promise<any, { status: number }>
   ```
 
-  Has you can see, this function is expected to retrieve user information given an access token. In case the process succeeds, it is expected to return the object that describes the user (the shape of this is again completely up to you). In case the process cannot succeed, the promise is expected to be rejected with a status code. In this last situation, the `accessToken` cannot be considered valid anymore. 
-  
+  Has you can see, this function is expected to retrieve user information given an access token. In case the process succeeds, it is expected to return the object that describes the user (the shape of this is again completely up to you). In case the process cannot succeed, the promise is expected to be rejected with a status code. In this last situation, the `accessToken` cannot be considered valid anymore.
+
   If a `refreshToken` was provided, `refreshTokenCall` is set on the `<Auth />` object and the error status code is 401, the library will attempt to refresh the token and eventually repeat the me call with the refreshed token. If for any reason the token cannot be refreshed the user will be logged out.
 
-* **refreshTokenCall**: some authentication schemes allow the usage of some kind of refresh token to obtain a fresh access token when the currently used one expires. This property allows to pass a function that implements the refresh procedure. As such, its signature is 
+* **refreshTokenCall**: some authentication schemes allow the usage of some kind of refresh token to obtain a fresh access token when the currently used one expires. This property allows to pass a function that implements the refresh procedure. As such, its signature is
 
   ```js
     (refreshToken: string) =>
@@ -99,8 +99,8 @@ const App = () => (
     storageNamespace='my-auth'
   >
     {
-      /* react-router or in any case the restricted section of 
-       * your application should be put here 
+      /* react-router or in any case the restricted section of
+       * your application should be put here
        */
     }
     <Screens />
@@ -177,7 +177,7 @@ const Login = () => {
 ```
 
 ### `useAuthActions()` hook
-This hook allows to invoke some auth related behaviours. It returns a plain JavaScript object whose properties are functions. 
+This hook allows to invoke some auth related behaviours. It returns a plain JavaScript object whose properties are functions.
 
 * **callApi**:
   This function performs an authenticated API call. The first parameter is the asynchronous function that implements the real api call (use XHR, Axios, SuperAgent or whatever you like inside). Any additional parameter will be forwarded as a parameter to the api call function. The api call function will also receive, as its last parameter, the current access token. The api call must return a promise. If all is fine, that promise is expected to resolve. In case it rejects, the rejection value must be an object with a status property carrying the status code of the request. A 401 code will trigger the refresh token operation (if available) and repeat the api call invocation with the new token. If even this second call is rejected, the user will be logged out.
