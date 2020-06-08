@@ -56,6 +56,11 @@ const Login = () => {
         login({ username, password })
       }
     }}>
+      <code>
+        username: giova
+        <br />
+        password: xiboro23
+      </code>
       <div>
         <input
           placeholder='@username'

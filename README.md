@@ -296,14 +296,3 @@ cd use-eazy-auth
 yarn install
 yarn dev
 ```
-
-## Todos
-
-- [x] refresh token logic
-- [ ] refresh before expiring
-- [ ] useLogin
-- [x] Routes for `react-router` as `eazy-auth` does
-- [ ] Improve tests
-- [ ] Improve docs
-- [ ] Wait for React 16.9
-- [ ] Maybe hocs :O
