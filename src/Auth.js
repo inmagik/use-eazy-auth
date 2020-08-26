@@ -9,7 +9,7 @@ import React, {
 import { Subject } from 'rxjs'
 import { makeStorage } from './storage'
 import { useConstant } from './helperHooks'
-import { bootAuth, performLogin } from './authEffects'
+import { bootAuth, makePerformLogin } from './authEffects'
 import makeCallApiRx from './callApiRx'
 // Reducer stuff
 import authReducer, { initialState } from './reducer'
@@ -22,9 +22,6 @@ export const AuthStateContext = createContext(initialState)
 export const AuthUserContext = createContext(null)
 export const AuthActionsContext = createContext({})
 
-// n00p
-const noop = () => {}
-
 export default function Auth({
   children,
   render,
@@ -34,23 +31,12 @@ export default function Auth({
   storageBackend,
   storageNamespace = 'auth',
 }) {
-  const mountedRef = useRef(true)
   const [state, originalDispatch] = useReducer(authReducer, initialState)
   const [actionObservable, dispatch] = useConstant(() => {
     const actionSubject = new Subject()
     const dispatch = (action) => {
-      // TODO: This just works ... BUT ...
-      // bootAuth and performLogin are not implement in a way
-      // that make easy to cancel all related tasks ...
-      // so the following workaround protecte use from
-      // "Can't perform a React state update on an unmounted component"
-      // but if <Auth /> is unmounted to early all related side effects
-      // still in place so in another life rewrite all this with RxJS
-      // so unsub from them should be easy .....
-      // if (mountedRef.current) {
       originalDispatch(action)
       actionSubject.next(action)
-      // }
     }
     return [actionSubject.asObservable(), dispatch]
   })
@@ -60,12 +46,7 @@ export default function Auth({
     storageNamespace,
   ])
 
-  const {
-    bootstrappedAuth,
-    accessToken,
-    loginLoading,
-    loginError,
-  } = state
+  const { bootstrappedAuth, accessToken, loginLoading, loginError } = state
 
   // TODO: Check better strategy and future trouble \w async react
   // This trick is done because token can change over time Es:. the token was refresh
@@ -103,12 +84,7 @@ export default function Auth({
       tokenRef,
       bootRef
     )
-  }, [
-    meCall,
-    refreshTokenCall,
-    storage,
-    dispatch,
-  ])
+  }, [meCall, refreshTokenCall, storage, dispatch])
 
   // ~~ Make Actions ~~~
 
@@ -117,37 +93,22 @@ export default function Auth({
     bindActionCreators(actionCreators, dispatch)
   )
 
+  const [performLogin, unsubscribeFromLogin] = useConstant(() =>
+    makePerformLogin(loginCall, meCall, storage, dispatch, tokenRef)
+  )
+
   const login = useCallback(
     (loginCredentials) => {
       if (
         // Is eazy auth boostrapped?
         bootstrappedAuth &&
-        // Is alredy loading call in place?
-        !loginLoading &&
         // Is ma men alredy logged?
         !authenticated
       ) {
-        performLogin(
-          loginCredentials,
-          loginCall,
-          meCall,
-          storage,
-          dispatch,
-          tokenRef
-        )
-          // Keep perform login returing a Promise for future use....
-          .then(noop, noop)
+        performLogin(loginCredentials)
       }
     },
-    [
-      meCall,
-      loginCall,
-      storage,
-      bootstrappedAuth,
-      authenticated,
-      loginLoading,
-      dispatch,
-    ]
+    [authenticated, bootstrappedAuth, performLogin]
   )
 
   const performLogout = useCallback(() => {
@@ -225,9 +186,9 @@ export default function Auth({
     return () => {
       // Goodbye Space Cowboy
       unsubscribe()
-      mountedRef.current = false
+      unsubscribeFromLogin()
     }
-  }, [unsubscribe])
+  }, [unsubscribe, unsubscribeFromLogin])
 
   return (
     <AuthActionsContext.Provider value={actions}>
