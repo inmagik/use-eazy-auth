@@ -1007,4 +1007,65 @@ describe('Auth', () => {
 
     expect(spyConsoleError).not.toHaveBeenCalled()
   })
+
+  it('should not set state on umounted component while login', async () => {
+    // Fake da calls
+    // Manual trigger da login
+    let resolveLogin
+    const loginCall = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveLogin = resolve
+        })
+    )
+    const meCall = jest.fn(() => Promise.resolve({ name: 'X' }))
+
+    // Fake an empty local storage
+    const resolvesGetItem = []
+    const localStorageMock = {
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const Eazy = () => {
+      const { authenticated } = useAuthState()
+
+      return (
+        <div>
+          <WhatInMaAuth />
+          {!authenticated ? <Login /> : <MaHome />}
+        </div>
+      )
+    }
+
+    const App = () => (
+      <Auth loginCall={loginCall} meCall={meCall}>
+        <Eazy />
+      </Auth>
+    )
+
+    const { getByTestId, unmount } = render(<App />)
+
+    await act(async () => {
+      resolvesGetItem[0](null)
+    })
+
+    // Time 2 Login!
+    fireEvent.click(getByTestId('login-btn'))
+
+    await act(async () => {
+      unmount()
+    })
+
+    const spyConsoleError = jest.spyOn(console, 'error')
+    await act(async () => {
+      resolveLogin({ accessToken: 23 })
+    })
+    expect(spyConsoleError).not.toHaveBeenCalled()
+  })
 })

@@ -38,7 +38,7 @@ export default function Auth({
   const [state, originalDispatch] = useReducer(authReducer, initialState)
   const [actionObservable, dispatch] = useConstant(() => {
     const actionSubject = new Subject()
-    const dispatch = action => {
+    const dispatch = (action) => {
       // TODO: This just works ... BUT ...
       // bootAuth and performLogin are not implement in a way
       // that make easy to cancel all related tasks ...
@@ -47,10 +47,10 @@ export default function Auth({
       // but if <Auth /> is unmounted to early all related side effects
       // still in place so in another life rewrite all this with RxJS
       // so unsub from them should be easy .....
-      if (mountedRef.current) {
-        originalDispatch(action)
-        actionSubject.next(action)
-      }
+      // if (mountedRef.current) {
+      originalDispatch(action)
+      actionSubject.next(action)
+      // }
     }
     return [actionSubject.asObservable(), dispatch]
   })
@@ -62,7 +62,6 @@ export default function Auth({
 
   const {
     bootstrappedAuth,
-    bootstrappingAuth,
     accessToken,
     loginLoading,
     loginError,
@@ -89,17 +88,25 @@ export default function Auth({
   const bootRef = useRef(false)
 
   // Boot Eazy Auth
+  // NOTE: Fuck off this subtle change the old bheaviur
+  // before the boot will never appends twice but can't be stopped
+  // ... now if storange change this will take again ... but storage
+  // isn't supporting to changes but in theory the change of storage
+  // should re-booting ma men eazy autth bho maybe check 4 future troubles
+  // and come here again
   useEffect(() => {
-    // Ensure auth boostrapped only once
-    if (!bootstrappedAuth && !bootstrappingAuth) {
-      bootAuth(meCall, refreshTokenCall, storage, dispatch, tokenRef, bootRef)
-    }
+    return bootAuth(
+      meCall,
+      refreshTokenCall,
+      storage,
+      dispatch,
+      tokenRef,
+      bootRef
+    )
   }, [
     meCall,
     refreshTokenCall,
     storage,
-    bootstrappedAuth,
-    bootstrappingAuth,
     dispatch,
   ])
 
@@ -111,7 +118,7 @@ export default function Auth({
   )
 
   const login = useCallback(
-    loginCredentials => {
+    (loginCredentials) => {
       if (
         // Is eazy auth boostrapped?
         bootstrappedAuth &&
@@ -162,7 +169,7 @@ export default function Auth({
   const {
     callAuthApiPromise,
     callAuthApiObservable,
-    unsubscribe
+    unsubscribe,
   } = useConstant(() => {
     return makeCallApiRx(
       refreshTokenCall,
