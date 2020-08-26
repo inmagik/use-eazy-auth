@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { isValidElement, createElement } from 'react'
 import { Route } from 'react-router-dom'
 import { useAuthState } from '../hooks'
 
@@ -7,18 +7,32 @@ import { useAuthState } from '../hooks'
  * (needed for first time local storage auth...)
  *
  */
-export default function MaybeAuthRoute({ component, spinner = null, ...rest }) {
+export default function MaybeAuthRoute({
+  children,
+  component,
+  render,
+  spinner = null,
+  ...rest
+}) {
   const { bootstrappedAuth, loginLoading } = useAuthState()
   return (
     <Route
       {...rest}
-      render={props => {
+      render={(props) => {
         if (!bootstrappedAuth || loginLoading) {
-          // Show nothing or a cool loading spinner
-          return spinner ? React.createElement(spinner) : null
+          // Spinner as element as component or null
+          return spinner
+            ? isValidElement(spinner)
+              ? spinner
+              : createElement(spinner)
+            : null
         }
-        // Always render route component
-        return React.createElement(component, props)
+        // Render as a Route
+        return children
+          ? children
+          : component
+          ? createElement(component, props)
+          : render(props)
       }}
     />
   )

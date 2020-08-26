@@ -1,10 +1,12 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, isValidElement, createElement } from 'react'
 import { Route, Redirect } from 'react-router-dom'
 import { useAuthState, useAuthUser } from '../hooks'
 
 const RedirectAuthRoute = React.memo(
   ({
+    children,
     component,
+    render,
     spinner = null,
     redirectTo = '/login',
     rememberReferrer = true,
@@ -16,10 +18,14 @@ const RedirectAuthRoute = React.memo(
   }) => (
     <Route
       {...rest}
-      render={props => {
+      render={(props) => {
         if (!bootstrappedAuth || loginLoading) {
-          // Show nothing or a cool loading spinner
-          return spinner ? React.createElement(spinner) : null
+          // Spinner as element as component or null
+          return spinner
+            ? isValidElement(spinner)
+              ? spinner
+              : createElement(spinner)
+            : null
         }
         // User authenticated
         if (authenticated) {
@@ -27,8 +33,12 @@ const RedirectAuthRoute = React.memo(
           if (userRedirectTo) {
             return <Redirect to={userRedirectTo} />
           }
-          // Render normal component
-          return React.createElement(component, props)
+          // Render as a Route
+          return children
+            ? children
+            : component
+            ? createElement(component, props)
+            : render(props)
         }
         // User not authenticated, redirect to login
         const to =

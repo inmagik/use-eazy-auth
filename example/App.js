@@ -3,36 +3,37 @@ import { BrowserRouter as Router, Link } from 'react-router-dom'
 import Auth, { useAuthState, useAuthActions, useAuthUser } from 'use-eazy-auth'
 import { GuestRoute, AuthRoute, MaybeAuthRoute } from 'use-eazy-auth/routes'
 
-const loginCall = ({ username, password }) => new Promise((resolve, reject) =>
-  (username === 'giova' && password === 'xiboro23')
-    ? resolve({ accessToken: 23, refreshToken: 777 })
-    : reject({ status: 401, error: 'Go out' })
-)
+const loginCall = ({ username, password }) =>
+  new Promise((resolve, reject) =>
+    username === 'giova' && password === 'xiboro23'
+      ? resolve({ accessToken: 23, refreshToken: 777 })
+      : reject({ status: 401, error: 'Go out' })
+  )
 
-const meCall = token => new Promise((resolve, reject) =>
-  (token === 23)
-    ? resolve({ username: 'giova', status: 'Awesome' })
-    : reject({ status: 401, error: 'Go out' })
-)
+const meCall = (token) =>
+  new Promise((resolve, reject) =>
+    token === 23
+      ? resolve({ username: 'giova', status: 'Awesome' })
+      : reject({ status: 401, error: 'Go out' })
+  )
 
-const refreshTokenCall = token => new Promise((resolve, reject) => {
-  console.log('Refresh!', token)
-  const newToken = 2323
-  return (token === 777)
-    ? resolve({ accessToken: newToken, refreshToken: 777 })
-    : reject({ status: 401, error: 'Go out' })
-})
+const refreshTokenCall = (token) =>
+  new Promise((resolve, reject) => {
+    console.log('Refresh!', token)
+    const newToken = 2323
+    return token === 777
+      ? resolve({ accessToken: newToken, refreshToken: 777 })
+      : reject({ status: 401, error: 'Go out' })
+  })
 
-const authenticatedGetTodos = (token) => (category) => new Promise((resolve, reject) => {
-  console.log('API Token', token)
-  console.log('Todos OF', category)
-  return (token === 23)
-    ? resolve([
-      'Learn React',
-      'Prepare the dinner',
-    ])
-    : reject({ status: 401, error: 'Go out' })
-})
+const authenticatedGetTodos = (token) => (category) =>
+  new Promise((resolve, reject) => {
+    console.log('API Token', token)
+    console.log('Todos OF', category)
+    return token === 23
+      ? resolve(['Learn React', 'Prepare the dinner'])
+      : reject({ status: 401, error: 'Go out' })
+  })
 
 const Login = () => {
   const { loginLoading, loginError } = useAuthState()
@@ -51,12 +52,14 @@ const Login = () => {
   }, [username, password, clearLoginError])
 
   return (
-    <form onSubmit={e => {
-      e.preventDefault()
-      if (username !== '' && password !== '') {
-        login({ username, password })
-      }
-    }}>
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (username !== '' && password !== '') {
+          login({ username, password })
+        }
+      }}
+    >
       <code>
         username: giova
         <br />
@@ -64,21 +67,23 @@ const Login = () => {
       </code>
       <div>
         <input
-          placeholder='@username'
-          type='text'
+          placeholder="@username"
+          type="text"
           value={username}
-          onChange={e => setUsername(e.target.value)}
+          onChange={(e) => setUsername(e.target.value)}
         />
       </div>
       <div>
         <input
-          placeholder='password'
-          type='password'
+          placeholder="password"
+          type="password"
           value={password}
-          onChange={e => setPassword(e.target.value)}
+          onChange={(e) => setPassword(e.target.value)}
         />
       </div>
-      <button disabled={loginLoading}>{!loginLoading ? 'Login!' : 'Logged in...'}</button>
+      <button disabled={loginLoading}>
+        {!loginLoading ? 'Login!' : 'Logged in...'}
+      </button>
       {loginError && <div>Bad combination of username and password</div>}
     </form>
   )
@@ -90,12 +95,16 @@ const Home = () => {
   const { logout, callAuthApiPromise } = useAuthActions()
 
   useEffect(() => {
-    callAuthApiPromise(authenticatedGetTodos, 'all').then(todos => setTodos(todos))
+    callAuthApiPromise(authenticatedGetTodos, 'all').then((todos) =>
+      setTodos(todos)
+    )
   }, [callAuthApiPromise])
 
   return (
     <div>
-      <h1>Welcome Back! {user.username} u are {user.status}!</h1>
+      <h1>
+        Welcome Back! {user.username} u are {user.status}!
+      </h1>
       <h2>Todos</h2>
       <ul>
         {todos.map((todo, i) => (
@@ -138,13 +147,22 @@ const App = () => (
   >
     <Router>
       <div>
-        <Link to={'/'}>Home</Link>{' | '}
-        <Link to={'/about'}>About</Link>{' | '}
-        <Link to={'/login'}>Login</Link>{' | '}
+        <Link to={'/'}>Home</Link>
+        {' | '}
+        <Link to={'/about'}>About</Link>
+        {' | '}
+        <Link to={'/login'}>Login</Link>
+        {' | '}
       </div>
-      <GuestRoute path='/login' component={Login} />
-      <AuthRoute path='/' exact component={Home} />
-      <MaybeAuthRoute path='/about' exact component={About} />
+      <GuestRoute path="/login">
+        <Login />
+      </GuestRoute>
+      <AuthRoute path="/" exact>
+        <Home />
+      </AuthRoute>
+      <MaybeAuthRoute path="/about" exact>
+        <About />
+      </MaybeAuthRoute>
     </Router>
   </Auth>
 )
