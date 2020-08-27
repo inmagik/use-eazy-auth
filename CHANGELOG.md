@@ -1,3 +1,21 @@
+## 1.1.0
+##### *August 27th, 2020*
+
+Rewrite the internal logic of effects in RxJS now `loginCall`, `meCall` and `refreshTokenCall`
+can return Rx Observable.
+
+So you can use `rjxs/ajax` without `.toPromise()`.
+
+All routes components can be rendered with all methods supported by `react-router`.
+
+Now you can do:
+
+```js
+<AuthRoute path='/account'>
+  <Account />
+</AuthRoute>
+```
+
 ## 1.0.0
 ##### *June 8th, 2020*
 

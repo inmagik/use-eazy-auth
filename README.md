@@ -30,7 +30,8 @@ The following properties are required:
 
   ```js
     (credentials: any) =>
-      Promise<{ accessToken: string, refreshToken?: string }, any>
+      Promise<{ accessToken: string, refreshToken?: string }, any> |
+      Observable<{ accessToken: string, refreshToken?: string }, any>
   ```
 
   Has you can see, the function is expected to return a promise which rejects in case of unsuccessful authentication (the error shape is up to you) or resolves in case of successful authentication. The required `accessToken` property in the resolution argument must hold the token which will be used to authenticate the user when interacting with the server. The optional `refreshToken` property, if present, must hold a token which is never used for API calls, but it is used to get a new token when that returned by the login expires without having the user go through the login procedure again. In case the access token expires and no refresh is possible, the user will experience a forced logout
@@ -38,7 +39,8 @@ The following properties are required:
 * **meCall**: the me call implements the process of validating a previously stored token while gathering information about the owner user. This is used both to read user information from server and make them available throughout the application and to validate a token that has been recalled after some time from storage (see later). The signature of this function must be
 
   ```js
-    (accessToken: string) => Promise<any, { status: number }>
+    (accessToken: string) =>
+      Promise<any, { status: number }> | Observable<any, { status: number }>
   ```
 
   Has you can see, this function is expected to retrieve user information given an access token. In case the process succeeds, it is expected to return the object that describes the user (the shape of this is again completely up to you). In case the process cannot succeed, the promise is expected to be rejected with a status code. In this last situation, the `accessToken` cannot be considered valid anymore.
@@ -49,7 +51,8 @@ The following properties are required:
 
   ```js
     (refreshToken: string) =>
-      Promise<{ accessToken: string, refreshToken?: string }, any>
+      Promise<{ accessToken: string, refreshToken?: string }, any> |
+      Observable<{ accessToken: string, refreshToken?: string }, any>
   ```
 
   Considerations about the login call hold just the same for this api, the only difference is that the `credentials` parameter is replaced by the `refreshToken`
@@ -284,7 +287,9 @@ You can import those components from `use-eazy-auth/routes`
 ### `<GuestRoute />` component
 The `<GuestRoute />` component accepts the following props
 
+* **children**: the react element to render if user is not authenticated
 * **component**: the component to render if user is not authenticated
+* **render**: the function to render if user is not authenticated
 * **redirectTo**: the path to redirect authenticated users to
 * **redirectToReferrer**: if set to `true`, users that are redirected to this page from an `<AuthRoute />` because they are not authenticated will be redirected back after login instead of being redirected to the path set by `redirectTo`. Note that it is mandatory to set the `redirectTo` property as unauthenticated users may land directly on a `GuestRoute` and so they may not have a referrer
 * **spinner**: an optional spinner component to render while the login call is pending instead of `component`
@@ -293,7 +298,9 @@ The `<GuestRoute />` component accepts the following props
 ### `<AuthRoute />` component
 The `<AuthRoute />` component accepts the following props
 
+* **children**: the react element to render if user is authenticated
 * **component**: the component to render if user is authenticated
+* **render**: the function to render if user is authenticated
 * **redirectTo**: the path to redirect a non authenticated user to
 * **rememberReferrer**: whether to enable the referrer in order to redirect the user back after login
 * **spinner**: an optional spinner to render instead of `component` until the auth initialization is not complete
@@ -302,7 +309,9 @@ The `<AuthRoute />` component accepts the following props
 ### `<MaybeAuthRoute />` component
 The `<AuthRoute />` component accepts the following props
 
-* **component**: the component to render if user is authenticated
+* **children**: the react element to render
+* **component**: the component to render
+* **render**: the function to render
 * **spinner**: an optional spinner to render instead of `component` until the auth initialization is not complete
 * any other property accepted by `<Route />`
 
