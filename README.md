@@ -303,6 +303,7 @@ The `<AuthRoute />` component accepts the following props
 * **render**: the function to render if user is authenticated
 * **redirectTo**: the path to redirect a non authenticated user to
 * **rememberReferrer**: whether to enable the referrer in order to redirect the user back after login
+* **redirectTest**: a function to test if current authenticated user can access your route, take user as only parameter and if falsy is returned the user can acccess the route, otherwise the return value is expected to be a valid path used to redirect the user.
 * **spinner**: an optional spinner to render instead of `component` until the auth initialization is not complete
 * any other property accepted by `<Route />`
 

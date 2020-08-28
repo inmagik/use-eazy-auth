@@ -80,12 +80,15 @@ export default function AuthRoute({ redirectTest, ...rest }) {
     if (user && typeof redirectTest === 'function') {
       const userRedirectTo = redirectTest(user)
       if (userRedirectTo) {
-        return <Redirect to={userRedirectTo} />
+        return userRedirectTo
       }
     }
     return null
   }, [user, redirectTest])
 
+  // NOTE: split in two components is only an optimization
+  // to avoid re-execute Route render when user changes but
+  // the output of redirect test doesnt't change
   return (
     <RedirectAuthRoute
       userRedirectTo={userRedirectTo}

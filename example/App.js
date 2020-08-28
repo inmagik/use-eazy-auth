@@ -13,7 +13,7 @@ const loginCall = ({ username, password }) =>
 const meCall = (token) =>
   new Promise((resolve, reject) =>
     token === 23
-      ? resolve({ username: 'giova', status: 'Awesome' })
+      ? resolve({ username: 'giova', status: 'Awesome', age: 17 })
       : reject({ status: 401, error: 'Go out' })
   )
 
@@ -139,6 +139,59 @@ function About() {
 //   return authenticated ? <Home /> : <Login />
 // }
 
+const Menu = () => {
+  const { user } = useAuthUser()
+  const { patchUser } = useAuthActions()
+
+  return (
+    <div>
+      <Link to={'/'}>Home</Link>
+      {' | '}
+      <Link to={'/about'}>About</Link>
+      {' | '}
+      <Link to={'/adult'}>18+</Link>
+      {' | '}
+      <Link to={'/login'}>Login</Link>
+      {' | '}
+      {user && (
+        <span>
+          {'~'}
+          <i>{user.username}</i> Age: {user.age}{' '}
+          <button
+            onClick={() =>
+              patchUser({
+                age: user.age + 1,
+              })
+            }
+          >
+            +
+          </button>{' '}
+          <button
+            onClick={() =>
+              patchUser({
+                age: user.age - 1,
+              })
+            }
+          >
+            -
+          </button>
+        </span>
+      )}
+    </div>
+  )
+}
+
+const Adult = () => {
+  console.log('Render Adult')
+  return (
+    <div>
+      <h2>Only Adult Here ;)</h2>
+    </div>
+  )
+}
+
+const isAdult = (user) => (user.age >= 18 ? false : '/about')
+
 const App = () => (
   <Auth
     loginCall={loginCall}
@@ -146,17 +199,16 @@ const App = () => (
     refreshTokenCall={refreshTokenCall}
   >
     <Router>
-      <div>
-        <Link to={'/'}>Home</Link>
-        {' | '}
-        <Link to={'/about'}>About</Link>
-        {' | '}
-        <Link to={'/login'}>Login</Link>
-        {' | '}
-      </div>
+      <Menu />
       <GuestRoute path="/login">
         <Login />
       </GuestRoute>
+      <AuthRoute
+        path="/adult"
+        redirectTest={(user) => (user.age >= 18 ? false : '/about')}
+      >
+        <Adult />
+      </AuthRoute>
       <AuthRoute path="/" exact>
         <Home />
       </AuthRoute>
