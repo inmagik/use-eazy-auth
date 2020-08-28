@@ -1,3 +1,8 @@
+## 1.2.0
+##### *August 28th, 2020*
+
+Fix bugged `redirectTest` in `<AuthRoute />` Component and document it.
+
 ## 1.1.0
 ##### *August 27th, 2020*
 
