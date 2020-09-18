@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { renderHook, act as actTest } from '@testing-library/react-hooks'
 import { render, fireEvent, act } from '@testing-library/react'
 import '@testing-library/jest-dom/extend-expect'
 import Auth from '../Auth'
@@ -1067,5 +1068,62 @@ describe('Auth', () => {
       resolveLogin({ accessToken: 23 })
     })
     expect(spyConsoleError).not.toHaveBeenCalled()
+  })
+  it('should be aware of calls failure', async () => {
+    const loginCall = jest.fn().mockRejectedValueOnce('GioVa')
+    const meCall = jest.fn().mockRejectedValue('GioVa')
+
+    // Fake an empty local storage
+    const resolvesGetItem = []
+    const localStorageMock = {
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const AuthWrapper = ({ children }) => (
+      <Auth loginCall={loginCall} meCall={meCall}>
+        {children}
+      </Auth>
+    )
+
+    const { result } = renderHook(() => useAuthActions(), {
+      wrapper: AuthWrapper,
+    })
+
+    await actTest(async () => {
+      resolvesGetItem[0](null)
+    })
+
+    await actTest(async () => {
+      result.current.login()
+    })
+    expect(loginCall).toHaveBeenCalledTimes(1)
+    expect(meCall).toHaveBeenCalledTimes(0)
+
+    loginCall.mockRejectedValueOnce('Fuck')
+    await actTest(async () => {
+      result.current.login()
+    })
+    expect(loginCall).toHaveBeenCalledTimes(2)
+    expect(meCall).toHaveBeenCalledTimes(0)
+
+    loginCall.mockResolvedValueOnce('Yeaah')
+    await actTest(async () => {
+      result.current.login()
+    })
+    expect(loginCall).toHaveBeenCalledTimes(3)
+    expect(meCall).toHaveBeenCalledTimes(1)
+
+    loginCall.mockResolvedValueOnce('Yeaah')
+    await actTest(async () => {
+      result.current.login()
+    })
+    expect(loginCall).toHaveBeenCalledTimes(4)
+    expect(meCall).toHaveBeenCalledTimes(2)
   })
 })

@@ -34,7 +34,7 @@ function makeCallWithRefresh(refreshTokenCall, accessToken, refreshToken) {
                 }),
                 // The error of new api fn don't really means
                 // instead reject the original 401 to enforce logout process
-                catchError(() => catchError(error))
+                catchError(() => throwError(error))
               )
             }),
             // At this point the refresh error does not is so usefuel
@@ -133,14 +133,6 @@ export function makePerformLogin(
 ) {
   const loginTrigger = new Subject()
 
-  // Shortcut to finish login \w failure
-  function loginFailed(error) {
-    dispatch({
-      type: LOGIN_FAILURE,
-      error,
-    })
-  }
-
   const subscription = loginTrigger
     .asObservable()
     .pipe(
@@ -150,34 +142,50 @@ export function makePerformLogin(
           mergeMap((loginResponse) => {
             const { accessToken } = loginResponse
             return from(meCall(accessToken, loginResponse)).pipe(
-              map((user) => [loginResponse, user])
+              map((user) => ({
+                type: LOGIN_SUCCESS,
+                payload: [loginResponse, user],
+              }))
             )
-          })
+          }),
+          catchError((error) =>
+            of({
+              type: LOGIN_FAILURE,
+              error,
+            })
+          )
         )
       })
     )
-    .subscribe(([loginResponse, user]) => {
-      const { accessToken, refreshToken, expires = null } = loginResponse
-      // Save the token ref GANG!
-      tokenRef.current = { accessToken, refreshToken, expires }
-      dispatch({
-        type: LOGIN_SUCCESS,
-        payload: {
-          user,
+    .subscribe((action) => {
+      if (action.type === LOGIN_SUCCESS) {
+        // Login Flow Success
+        const [loginResponse, user] = action.payload
+        const { accessToken, refreshToken, expires = null } = loginResponse
+        // Save the token ref GANG!
+        tokenRef.current = { accessToken, refreshToken, expires }
+        dispatch({
+          type: LOGIN_SUCCESS,
+          payload: {
+            user,
+            expires,
+            accessToken,
+            refreshToken,
+          },
+        })
+        // Ok this can be an async action sure but
+        // is better wait them and so do waiting the use before
+        // notify them that login was success i don't kown....
+        storage.setTokens({
           expires,
           accessToken,
           refreshToken,
-        },
-      })
-      // Ok this can be an async action sure but
-      // is better wait them and so do waiting the use before
-      // notify them that login was success i don't kown....
-      storage.setTokens({
-        expires,
-        accessToken,
-        refreshToken,
-      })
-    }, loginFailed)
+        })
+      } else if (action.type === LOGIN_FAILURE) {
+        // Login Flow Failure
+        dispatch(action)
+      }
+    })
 
   const performLogin = (loginCredentials) => loginTrigger.next(loginCredentials)
   return [performLogin, () => subscription.unsubscribe()]
