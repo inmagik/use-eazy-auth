@@ -1,10 +1,21 @@
+## 1.3.0
+##### *September 18th, 2020*
+
+Fix bug that prevent retriggering login if previous login fail.
+
 ## 1.2.0
 ##### *August 28th, 2020*
+
+### :heavy_exclamation_mark: DON'T INSTALL THIS VERSION
+*This version is bugged fixed in 1.3.0, sorry.*
 
 Fix bugged `redirectTest` in `<AuthRoute />` Component and document it.
 
 ## 1.1.0
 ##### *August 27th, 2020*
+
+### :heavy_exclamation_mark: DON'T INSTALL THIS VERSION
+*This version is bugged fixed in 1.3.0, sorry.*
 
 Rewrite the internal logic of effects in RxJS now `loginCall`, `meCall` and `refreshTokenCall`
 can return Rx Observable.
