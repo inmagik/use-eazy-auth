@@ -11,6 +11,10 @@
   "bugs": {
     "url": "https://github.com/inmagik/use-eazy-auth/issues"
   },
+  "files": [
+    "lib",
+    "routes"
+  ],
   "keywords": [
     "react",
     "hooks",

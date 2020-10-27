@@ -1,9 +1,0 @@
-/src
-/example
-/coverage
-
-.travis.yml
-webpack.config.js
-yarn.lock
-.babelrc.js
-rollup.config.js
