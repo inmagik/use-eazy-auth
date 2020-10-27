@@ -22,7 +22,7 @@ const UNAUTHORIZED_ERROR_SHAPE = {
   fromRefresh: true,
 }
 
-const tokenRefreshed = refreshedTokens => ({
+const tokenRefreshed = (refreshedTokens) => ({
   type: TOKEN_REFRESHED,
   payload: refreshedTokens,
 })
@@ -45,7 +45,7 @@ export default function makeCallApiRx(
 ) {
   // An Observable that emit when logout was dispatched
   const logoutObservable = actionObservable.pipe(
-    filter(action => action.type === LOGOUT)
+    filter((action) => action.type === LOGOUT)
   )
 
   // Subject for emit refresh tasks
@@ -54,18 +54,18 @@ export default function makeCallApiRx(
   // An Observable that perform the refresh token call
   // until logout was dispatched and emit actions
   const refreshRoutine = refreshEmitter.asObservable().pipe(
-    exhaustMap(refreshToken => {
+    exhaustMap((refreshToken) => {
       return concat(
         of(tokenRefreshing()),
         from(refreshTokenCall(refreshToken)).pipe(
-          map(refreshResponse =>
+          map((refreshResponse) =>
             tokenRefreshed({
               accessToken: refreshResponse.accessToken,
               refreshToken: refreshResponse.refreshToken,
               expires: refreshResponse.expires,
             })
           ),
-          catchError(error => of({ type: LOGOUT })),
+          catchError((error) => of({ type: LOGOUT })),
           takeUntil(logoutObservable)
         )
       )
@@ -80,10 +80,10 @@ export default function makeCallApiRx(
   function waitForStoreRefreshObservable() {
     return actionObservable.pipe(
       filter(
-        action => action.type === TOKEN_REFRESHED || action.type === LOGOUT
+        (action) => action.type === TOKEN_REFRESHED || action.type === LOGOUT
       ),
       take(1),
-      mergeMap(action => {
+      mergeMap((action) => {
         if (action.type === LOGOUT) {
           return throwError(UNAUTHORIZED_ERROR_SHAPE)
         }
@@ -103,7 +103,7 @@ export default function makeCallApiRx(
     let waitBootObservable
     if (!authBooted) {
       waitBootObservable = actionObservable.pipe(
-        filter(action => action.type === BOOTSTRAP_AUTH_END),
+        filter((action) => action.type === BOOTSTRAP_AUTH_END),
         take(1),
         mergeMap(() => empty())
       )
@@ -189,9 +189,9 @@ export default function makeCallApiRx(
       if (error.status === 401) {
         // Try refresh
         return refreshOnUnauth(firstAccessToken).pipe(
-          mergeMap(accessToken => {
+          mergeMap((accessToken) => {
             return from(apiFn(accessToken)(...args)).pipe(
-              catchError(error => {
+              catchError((error) => {
                 unauthLogout(accessToken, error)
                 return throwError(error)
               })
@@ -205,9 +205,9 @@ export default function makeCallApiRx(
 
   function callAuthApiObservable(apiFn, ...args) {
     return getAccessToken().pipe(
-      mergeMap(firstAccessToken =>
+      mergeMap((firstAccessToken) =>
         from(apiFn(firstAccessToken)(...args)).pipe(
-          catchError(error =>
+          catchError((error) =>
             onObsevableError(error, apiFn, firstAccessToken, args)
           )
         )
@@ -218,8 +218,8 @@ export default function makeCallApiRx(
   function callAuthApiPromise(apiFn, ...args) {
     return getAccessToken()
       .toPromise()
-      .then(firstAccessToken => {
-        return apiFn(firstAccessToken)(...args).catch(error => {
+      .then((firstAccessToken) => {
+        return apiFn(firstAccessToken)(...args).catch((error) => {
           if (firstAccessToken !== null) {
             if (typeof refreshTokenCall !== 'function') {
               // Refresh can't be called
@@ -230,8 +230,8 @@ export default function makeCallApiRx(
               // Try refresh
               return refreshOnUnauth(firstAccessToken)
                 .toPromise()
-                .then(accessToken => {
-                  return apiFn(accessToken)(...args).catch(error => {
+                .then((accessToken) => {
+                  return apiFn(accessToken)(...args).catch((error) => {
                     unauthLogout(accessToken, error)
                     return Promise.reject(error)
                   })
@@ -247,7 +247,7 @@ export default function makeCallApiRx(
   // GioVa 1312 illegal boy
   const firstBootSub = actionObservable
     .pipe(
-      filter(action => action.type === BOOTSTRAP_AUTH_END),
+      filter((action) => action.type === BOOTSTRAP_AUTH_END),
       take(1)
     )
     .subscribe(() => {
@@ -255,12 +255,12 @@ export default function makeCallApiRx(
     })
 
   const logoutSub = actionObservable
-    .pipe(filter(action => action.type === LOGOUT))
+    .pipe(filter((action) => action.type === LOGOUT))
     .subscribe(() => {
       refreshingRef.current = false
     })
 
-  const refreshSub = refreshRoutine.subscribe(action => {
+  const refreshSub = refreshRoutine.subscribe((action) => {
     if (action.type === TOKEN_REFRESHING) {
       refreshingRef.current = true
     } else if (action.type === TOKEN_REFRESHED) {

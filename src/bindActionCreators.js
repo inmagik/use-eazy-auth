@@ -1,7 +1,7 @@
 // https://raw.githubusercontent.com/reduxjs/redux/master/src/bindActionCreators.js
 
 function bindActionCreator(actionCreator, dispatch) {
-  return function() {
+  return function () {
     return dispatch(actionCreator.apply(this, arguments))
   }
 }

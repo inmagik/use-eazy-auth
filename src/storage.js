@@ -1,7 +1,7 @@
 const noopStorageBackend = {
   getItem: () => null,
-  setItem: () => { },
-  removeItem: () => { },
+  setItem: () => {},
+  removeItem: () => {},
 }
 
 // If a promise return them if other return the value as resolved promise ...
@@ -17,17 +17,23 @@ function getResolvedOrPromise(value) {
   return Promise.resolve(value)
 }
 
-const checkStorage = storageCandidate => {
-  if (typeof storageCandidate.getItem !== "function") {
-    console.error("[use-eazy-auth] Invalid storage backend, it lacks function getItem, no storage will be used")
+const checkStorage = (storageCandidate) => {
+  if (typeof storageCandidate.getItem !== 'function') {
+    console.error(
+      '[use-eazy-auth] Invalid storage backend, it lacks function getItem, no storage will be used'
+    )
     return false
   }
-  if (typeof storageCandidate.setItem !== "function") {
-    console.error("[use-eazy-auth] Invalid storage backend, it lacks function setItem, no storage will be used")
+  if (typeof storageCandidate.setItem !== 'function') {
+    console.error(
+      '[use-eazy-auth] Invalid storage backend, it lacks function setItem, no storage will be used'
+    )
     return false
   }
-  if (typeof storageCandidate.removeItem !== "function") {
-    console.error("[use-eazy-auth] Invalid storage backend, it lacks function removeItem, no storage will be used")
+  if (typeof storageCandidate.removeItem !== 'function') {
+    console.error(
+      '[use-eazy-auth] Invalid storage backend, it lacks function removeItem, no storage will be used'
+    )
     return false
   }
   return true
@@ -38,10 +44,10 @@ const checkStorage = storageCandidate => {
  * The wrapper solves two tasks
  * - serialize and deserialize the token bag to string
  * - return a consistent Promise-base interface towards the store
- *     in particular, some stores like ReactNative AsyncStorage are asynchronous, 
+ *     in particular, some stores like ReactNative AsyncStorage are asynchronous,
  *     while window.localStorage is synchronous, we want to uniform these behaviours
- * @param {any} givenStorageBackend 
- * @param {string} storageNamespace 
+ * @param {any} givenStorageBackend
+ * @param {string} storageNamespace
  */
 export const makeStorage = (givenStorageBackend, storageNamespace) => {
   let storageBackend = noopStorageBackend
@@ -66,7 +72,7 @@ export const makeStorage = (givenStorageBackend, storageNamespace) => {
 
   const getTokens = () => {
     return getResolvedOrPromise(storageBackend.getItem(storageNamespace)).then(
-      rawTokens => {
+      (rawTokens) => {
         // Empty storage...
         if (typeof rawTokens !== 'string') {
           return Promise.reject()
@@ -82,7 +88,7 @@ export const makeStorage = (givenStorageBackend, storageNamespace) => {
     )
   }
 
-  const setTokens = tokens => {
+  const setTokens = (tokens) => {
     return getResolvedOrPromise(
       storageBackend.setItem(storageNamespace, JSON.stringify(tokens))
     )

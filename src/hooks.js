@@ -26,7 +26,7 @@ export function useLogin(credentialsConf = ['username', 'password']) {
   }, [login, credentials])
 
   const handleSubmit = useCallback(
-    e => {
+    (e) => {
       e.preventDefault()
       loginWithCredentials()
     },
@@ -51,9 +51,9 @@ export function useLogin(credentialsConf = ['username', 'password']) {
         ...out,
         [name]: {
           // TODO: check for no event simply string....
-          onChange: e => {
+          onChange: (e) => {
             const value = e.target.value
-            setCredentials(credentials => ({
+            setCredentials((credentials) => ({
               ...credentials,
               [name]: value,
             }))
