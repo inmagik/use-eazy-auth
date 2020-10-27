@@ -1,3 +1,8 @@
+## 1.3.1
+##### *October 27th, 2020*
+
+Support React 17 in peerDependencies and bump some build packages, nothing changed.
+
 ## 1.3.0
 ##### *September 18th, 2020*
 
