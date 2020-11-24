@@ -39,10 +39,11 @@ export default function makeCallApiRx(
   storage,
   tokenRef,
   bootRef,
-  refreshingRef,
   actionObservable,
   logout
 ) {
+  let refreshingSemaphore = false
+
   // An Observable that emit when logout was dispatched
   const logoutObservable = actionObservable.pipe(
     filter((action) => action.type === LOGOUT)
@@ -122,7 +123,7 @@ export default function makeCallApiRx(
           return of(null)
         }
 
-        const refreshing = refreshingRef.current
+        const refreshing = refreshingSemaphore
         // Refresh in place wait from redux
         if (refreshing) {
           return waitForStoreRefreshObservable()
@@ -146,7 +147,7 @@ export default function makeCallApiRx(
       return throwError(UNAUTHORIZED_ERROR_SHAPE)
     }
 
-    const refreshing = refreshingRef.current
+    const refreshing = refreshingSemaphore
     if (refreshing) {
       return waitForStoreRefreshObservable()
     }
@@ -167,7 +168,7 @@ export default function makeCallApiRx(
   // Logout user when an unauthorized error happens or refresh failed
   function unauthLogout(badAccessToken, error) {
     const { accessToken = null } = tokenRef.current || {}
-    const refreshing = refreshingRef.current
+    const refreshing = refreshingSemaphore
 
     if (accessToken !== null && !refreshing && accessToken === badAccessToken) {
       if (typeof error === 'object' && error.status === 401) {
@@ -257,20 +258,20 @@ export default function makeCallApiRx(
   const logoutSub = actionObservable
     .pipe(filter((action) => action.type === LOGOUT))
     .subscribe(() => {
-      refreshingRef.current = false
+      refreshingSemaphore = false
     })
 
   const refreshSub = refreshRoutine.subscribe((action) => {
     if (action.type === TOKEN_REFRESHING) {
-      refreshingRef.current = true
+      refreshingSemaphore = true
     } else if (action.type === TOKEN_REFRESHED) {
       const { payload } = action
-      refreshingRef.current = false
+      refreshingSemaphore = false
       tokenRef.current = payload
       dispatch(action)
       storage.setTokens(payload)
     } else if (action.type === LOGOUT) {
-      refreshingRef.current = false
+      refreshingSemaphore = false
       logout()
     }
   })

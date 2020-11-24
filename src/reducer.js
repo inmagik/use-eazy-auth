@@ -14,6 +14,9 @@ import {
   // Token refreshed
   TOKEN_REFRESHED,
 
+  // Explicit set tokens
+  SET_TOKENS,
+
   // Update user data
   UPDATE_USER,
 
@@ -103,6 +106,13 @@ const authReducer = (
       }
       return nextState
     }
+    case SET_TOKENS:
+      return {
+        ...previousState,
+        expires: payload.expires,
+        accessToken: payload.accessToken,
+        refreshToken: payload.refreshToken,
+      }
     case TOKEN_REFRESHED:
       return {
         ...previousState,

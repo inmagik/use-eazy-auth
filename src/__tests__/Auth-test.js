@@ -1126,4 +1126,80 @@ describe('Auth', () => {
     expect(loginCall).toHaveBeenCalledTimes(4)
     expect(meCall).toHaveBeenCalledTimes(2)
   })
+
+  it('Should give an action to imperative setTokens', async () => {
+    // Fake da calls
+    const loginCall = jest.fn()
+    // Hack for manual resolve the me promise
+    let resolveMe
+    const meCall = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveMe = resolve
+        })
+    )
+
+    // Fake a good storage
+    const resolvesGetItem = []
+    const localStorageMock = {
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const AuthWrapper = ({ children }) => (
+      <Auth loginCall={loginCall} meCall={meCall}>
+        {children}
+      </Auth>
+    )
+
+    function useAllAuth() {
+      return [useAuthUser(), useAuthActions()]
+    }
+
+    const { result } = renderHook(() => useAllAuth(), {
+      wrapper: AuthWrapper,
+    })
+
+    await actTest(async () => {
+      resolvesGetItem[0](JSON.stringify({ accessToken: 23 }))
+    })
+
+    await actTest(async () => {
+      resolveMe({ name: 'Giova' })
+    })
+
+    expect(result.current[0]).toEqual({
+      user: { name: 'Giova' },
+      token: 23,
+    })
+
+    await actTest(async () => {
+      result.current[1].setTokens({ accessToken: 99 })
+    })
+
+    // Token in ma state
+    expect(result.current[0]).toEqual({
+      user: { name: 'Giova' },
+      token: 99,
+    })
+
+    // TOken in storage
+    expect(localStorageMock.setItem).toHaveBeenCalledWith('auth', JSON.stringify({
+      accessToken: 99,
+    }))
+
+    const fakeApi = jest.fn((t) => () => Promise.resolve(88))
+
+    await actTest(async () => {
+      await result.current[1].callAuthApiPromise(fakeApi)
+    })
+
+    // Token for ma caller
+    expect(fakeApi).toHaveBeenCalledWith(99)
+  })
 })

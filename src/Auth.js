@@ -15,7 +15,7 @@ import makeCallApiRx from './callApiRx'
 import authReducer, { initialState } from './reducer'
 import bindActionCreators from './bindActionCreators'
 import * as actionCreators from './actions'
-import { LOGOUT } from './actionTypes'
+import { LOGOUT, SET_TOKENS } from './actionTypes'
 
 // Declare Eazy Auth contexts
 export const AuthStateContext = createContext(initialState)
@@ -125,8 +125,19 @@ export default function Auth({
     }
   }, [performLogout, authenticated])
 
-  // Handle the ref of refreshing token status of eazy auth
-  const refreshingRef = useRef(false)
+  const setTokens = useCallback(
+    ({ accessToken, refreshToken, expires }) => {
+      const tokensBag = { accessToken, refreshToken, expires }
+      tokenRef.current = tokensBag
+      dispatch({
+        type: SET_TOKENS,
+        payload: tokensBag,
+      })
+      storage.setTokens(tokensBag)
+    },
+    [dispatch, storage]
+  )
+
   const {
     callAuthApiPromise,
     callAuthApiObservable,
@@ -138,7 +149,6 @@ export default function Auth({
       storage,
       tokenRef,
       bootRef,
-      refreshingRef,
       actionObservable,
       performLogout
     )
@@ -152,6 +162,7 @@ export default function Auth({
       callAuthApiObservable,
       login,
       logout,
+      setTokens,
     }),
     [
       login,
@@ -159,6 +170,7 @@ export default function Auth({
       bindedActionCreators,
       callAuthApiPromise,
       callAuthApiObservable,
+      setTokens,
     ]
   )
 
