@@ -1,3 +1,15 @@
+## 1.4.0
+##### *November 24th, 2020*
+
+Add `setTokens` action to explict set new tokens:
+
+```js
+const { setTokens } = useAuthActions()
+setTokens({ accessToken: 'NEW_TOKEN' })
+// or (if you support refresh token in your use-eazy-auth conf)
+setTokens({ accessToken: 'NEW_TOKEN', refreshToken: 'NEW_REFRESH' })
+```
+
 ## 1.3.1
 ##### *October 27th, 2020*
 
