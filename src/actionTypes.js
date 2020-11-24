@@ -15,3 +15,5 @@ export const TOKEN_REFRESHED = 'TOKEN_REFRESHED'
 export const UPDATE_USER = 'UPDATE_USER'
 
 export const PATCH_USER = 'PATCH_USER'
+
+export const SET_TOKENS = 'SET_TOKENS'
