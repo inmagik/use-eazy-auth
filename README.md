@@ -216,6 +216,12 @@ This hook allows to invoke some auth related behaviours. It returns a plain Java
 * **patchUser**
   This function shallow merge the given *User* object with current *User* object.
 
+* **setTokens**
+  ```js
+    ({ accessToken: string, refreshToken?: string }) => void
+  ```
+  This function explicit set new tokens, this function write new tokens in storage as well.
+
 All these functions are stable across renders, so it is safe to add them as dependencies of some `useEffect` or `useMemo`, they will never trigger any unnecessary re-renders.
 
 Here is some example
