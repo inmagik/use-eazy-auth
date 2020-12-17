@@ -1,4 +1,11 @@
-import { useContext, useState, useCallback, useMemo, useEffect } from 'react'
+import {
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  ChangeEvent,
+  FormEvent,
+} from 'react'
 import {
   AuthUserContext,
   AuthStateContext,
@@ -22,78 +29,99 @@ export function useAuthUser<U = any, A = any>() {
   return user
 }
 
-// export function useLogin(credentialsConf = ['username', 'password']) {
-//   const [credentials, setCredentials] = useState({})
-//   const { loginError, loginLoading } = useAuthState()
-//   const { login } = useAuthActions()
+interface ValueProp {
+  value: string
+}
 
-//   const loginWithCredentials = useCallback(() => {
-//     login(credentials)
-//   }, [login, credentials])
+interface OnChangeProp {
+  onChange(e: ChangeEvent<HTMLInputElement>): void
+}
 
-//   const handleSubmit = useCallback(
-//     (e) => {
-//       e.preventDefault()
-//       loginWithCredentials()
-//     },
-//     [loginWithCredentials]
-//   )
+export interface ShapeLoginResult {
+  handleSubmit(e: FormEvent): void
+  login(): void
+  loginError: any
+  loginLoading: boolean
+}
 
-//   const valuesProps = useMemo(() => {
-//     return credentialsConf.reduce(
-//       (out, name) => ({
-//         ...out,
-//         [name]: {
-//           value: credentials[name] === undefined ? '' : credentials[name],
-//         },
-//       }),
-//       {}
-//     )
-//   }, [credentials, credentialsConf])
+export type LoginResult = ShapeLoginResult &
+  Record<string, ValueProp & OnChangeProp>
 
-//   const onChangesProps = useMemo(() => {
-//     return credentialsConf.reduce(
-//       (out, name) => ({
-//         ...out,
-//         [name]: {
-//           // TODO: check for no event simply string....
-//           onChange: (e) => {
-//             const value = e.target.value
-//             setCredentials((credentials) => ({
-//               ...credentials,
-//               [name]: value,
-//             }))
-//           },
-//         },
-//       }),
-//       {}
-//     )
-//   }, [setCredentials, credentialsConf])
+// TODO: On the very end this hook sucks and realted types sucks
+// in future we must rewrite it or find a more suitable solution
+// here for compatibility reason
+export function useLogin(
+  credentialsConf: string[] = ['username', 'password']
+): LoginResult {
+  const [credentials, setCredentials] = useState<Record<string, string>>({})
 
-//   const credentialsProps = useMemo(() => {
-//     return Object.keys(valuesProps).reduce(
-//       (r, name) => ({
-//         ...r,
-//         [name]: {
-//           ...valuesProps[name],
-//           ...onChangesProps[name],
-//         },
-//       }),
-//       {}
-//     )
-//   }, [valuesProps, onChangesProps])
+  const { loginError, loginLoading } = useAuthState()
 
-//   // console.log({
-//   //   valuesProps,
-//   //   onChangesProps,
-//   //   credentialsProps
-//   // })
+  const { login } = useAuthActions()
 
-//   return {
-//     handleSubmit,
-//     login: loginWithCredentials,
-//     loginError,
-//     loginLoading,
-//     ...credentialsProps,
-//   }
-// }
+  const loginWithCredentials = useCallback(() => {
+    login(credentials)
+  }, [login, credentials])
+
+  const handleSubmit = useCallback(
+    (e: FormEvent) => {
+      e.preventDefault()
+      loginWithCredentials()
+    },
+    [loginWithCredentials]
+  )
+
+  const valuesProps: Record<string, ValueProp> = useMemo(() => {
+    return credentialsConf.reduce(
+      (out, name) => ({
+        ...out,
+        [name]: {
+          value: credentials[name] === undefined ? '' : credentials[name],
+        },
+      }),
+      {}
+    )
+  }, [credentials, credentialsConf])
+
+  const onChangesProps: Record<string, OnChangeProp> = useMemo(() => {
+    return credentialsConf.reduce(
+      (out, name) => ({
+        ...out,
+        [name]: {
+          onChange: (e: ChangeEvent<HTMLInputElement>) => {
+            const value = e.target.value
+            setCredentials((credentials) => ({
+              ...credentials,
+              [name]: value,
+            }))
+          },
+        },
+      }),
+      {}
+    )
+  }, [setCredentials, credentialsConf])
+
+  const credentialsProps: Record<
+    string,
+    ValueProp & OnChangeProp
+  > = useMemo(() => {
+    return Object.keys(valuesProps).reduce(
+      (r, name) => ({
+        ...r,
+        [name]: {
+          ...valuesProps[name],
+          ...onChangesProps[name],
+        },
+      }),
+      {}
+    )
+  }, [valuesProps, onChangesProps])
+
+  return {
+    handleSubmit,
+    login: loginWithCredentials,
+    loginError,
+    loginLoading,
+    ...credentialsProps,
+  } as LoginResult
+}
