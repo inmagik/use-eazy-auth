@@ -1,20 +1,36 @@
+import { Dispatch, MutableRefObject } from 'react'
+import { from, of, throwError, Subject, Observable } from 'rxjs'
+import { mergeMap, map, catchError, exhaustMap, tap } from 'rxjs/operators'
 import {
   BOOTSTRAP_AUTH_START,
   BOOTSTRAP_AUTH_END,
   LOGIN_LOADING,
   LOGIN_SUCCESS,
   LOGIN_FAILURE,
+  AuthActions,
+  EndBootPayload,
 } from './actionTypes'
-import { from, of, throwError, Subject } from 'rxjs'
-import { mergeMap, map, catchError, exhaustMap, tap } from 'rxjs/operators'
+import { AuthStorage } from './storage'
+import { AuthTokens, LoginCall, MeCall, RefreshTokenCall } from './types'
 
-function makeCallWithRefresh(refreshTokenCall, accessToken, refreshToken) {
-  return (apiFn, ...args) => {
-    return from(apiFn(...args, accessToken)).pipe(
-      map((response) => [response, null]),
+export type ApiFn<T = any, O = any> = (token: T) => Promise<O> | Observable<O>
+
+function makeCallWithRefresh<A = any, R = any>(
+  accessToken: A,
+  refreshToken?: R,
+  refreshTokenCall?: RefreshTokenCall<A, R>
+) {
+  return (
+    apiFn: ApiFn<A>
+  ): Observable<{
+    response: any
+    refreshedTokens: null | AuthTokens<A, R>
+  }> => {
+    return from(apiFn(accessToken)).pipe(
+      map((response) => ({ response, refreshedTokens: null })),
       catchError((error) => {
         if (
-          // Tri refresh when:
+          // Try refresh when:
           // Got an auth error
           error.status === 401 &&
           // We have a refresh token and an api call that we can perform
@@ -26,11 +42,10 @@ function makeCallWithRefresh(refreshTokenCall, accessToken, refreshToken) {
             mergeMap((refreshedTokens) => {
               // Yeah refresh appends!
               // Ok now retry the apiFn \w refreshed shit!
-              return from(apiFn(...args, refreshedTokens.accessToken)).pipe(
+              return from(apiFn(refreshedTokens.accessToken)).pipe(
                 map((response) => {
-                  // console.log('Refresh appends!', refreshedTokens)
                   // Curry the refreshed shit \w response
-                  return [response, refreshedTokens]
+                  return { response, refreshedTokens }
                 }),
                 // The error of new api fn don't really means
                 // instead reject the original 401 to enforce logout process
@@ -54,36 +69,33 @@ function makeCallWithRefresh(refreshTokenCall, accessToken, refreshToken) {
 // if any try to use theese to authenticate the user \w the given meCall
 // LS -> meCall(token) -> user
 // dispatch to top state and keep token in sync using a React useRef
-export function bootAuth(
-  meCall,
-  refreshTokenCall,
-  storage,
-  dispatch,
-  tokenRef,
-  bootRef
+export function bootAuth<A = any, R = any>(
+  meCall: MeCall<A>,
+  refreshTokenCall: RefreshTokenCall<A, R> | undefined,
+  storage: AuthStorage<A, R>,
+  dispatch: Dispatch<AuthActions>,
+  tokenRef: MutableRefObject<AuthTokens<A, R> | null>,
+  bootRef: MutableRefObject<boolean>
 ) {
   // Shortcut to finish boot process default not authenticated
-  function endBoot(payload = { authenticated: false }) {
+  function endBoot(payload: EndBootPayload = { authenticated: false }) {
     bootRef.current = true
-    dispatch({ type: BOOTSTRAP_AUTH_END, payload })
+    dispatch({
+      type: BOOTSTRAP_AUTH_END,
+      payload,
+    })
   }
 
-  // console.log('Booootstrap Ma MEN Eazy Auth')
   dispatch({ type: BOOTSTRAP_AUTH_START })
 
   const subscription = from(storage.getTokens())
     .pipe(
       mergeMap((tokensInStorage) => {
-        // No tokens in storage Nothing 2 do
-        if (!tokensInStorage) {
-          return of([tokensInStorage, null])
-        }
-
         // Prepare the ~ M A G I K ~ Api call with refresh
         const callWithRefresh = makeCallWithRefresh(
-          refreshTokenCall,
           tokensInStorage.accessToken,
-          tokensInStorage.refreshToken
+          tokensInStorage.refreshToken,
+          refreshTokenCall
         )
 
         return callWithRefresh(meCall).pipe(
@@ -92,30 +104,27 @@ export function bootAuth(
             storage.removeTokens()
             return throwError(err)
           }),
-          map((responseWithRefresh) => [tokensInStorage, responseWithRefresh])
+          map((responseWithRefresh) => ({
+            tokensInStorage,
+            responseWithRefresh,
+          }))
         )
       })
     )
-    .subscribe(([tokensInStorage, responseWithRefresh]) => {
-      // Nothing to do
-      if (!responseWithRefresh) {
-        endBoot()
-      }
-      const [user, refreshedTokens] = responseWithRefresh
+    .subscribe(({ tokensInStorage, responseWithRefresh }) => {
+      const { response: user, refreshedTokens } = responseWithRefresh
       // If token refreshed take the token refreshed as valid otherwise use the good
       // old tokens from local storage
       const validTokens = refreshedTokens ? refreshedTokens : tokensInStorage
-
       // GANG saved the valid tokens to the current ref!
       tokenRef.current = validTokens
-
       // Tell to ma reducer
       endBoot({
         authenticated: true,
         user,
         ...validTokens,
       })
-      // Plus only if refreshed save freshed in local storage!
+      // // Plus only if refreshed save freshed in local storage!
       if (refreshedTokens) {
         storage.setTokens(refreshedTokens)
       }
@@ -124,14 +133,27 @@ export function bootAuth(
   return () => subscription.unsubscribe()
 }
 
-export function makePerformLogin(
-  loginCall,
-  meCall,
-  storage,
-  dispatch,
-  tokenRef
-) {
-  const loginTrigger = new Subject()
+interface SuccessLoginEffectAction<A, R> {
+  type: typeof LOGIN_SUCCESS
+  payload: {
+    loginResponse: AuthTokens<A, R>
+    user: any
+  }
+}
+
+interface FailureLoginEffectAction {
+  type: typeof LOGIN_FAILURE
+  error: any
+}
+
+export function makePerformLogin<A = any, R = any, U = any, C = any>(
+  loginCall: LoginCall<C, A, R>,
+  meCall: MeCall<A, U>,
+  storage: AuthStorage<A, R>,
+  dispatch: Dispatch<AuthActions<A, R, U>>,
+  tokenRef: MutableRefObject<AuthTokens<A, R> | null>
+): [(loginCredentials: C) => void, () => void] {
+  const loginTrigger = new Subject<C>()
 
   const subscription = loginTrigger
     .asObservable()
@@ -142,17 +164,20 @@ export function makePerformLogin(
           mergeMap((loginResponse) => {
             const { accessToken } = loginResponse
             return from(meCall(accessToken, loginResponse)).pipe(
-              map((user) => ({
-                type: LOGIN_SUCCESS,
-                payload: [loginResponse, user],
-              }))
+              map(
+                (user) =>
+                  ({
+                    type: LOGIN_SUCCESS,
+                    payload: { loginResponse, user },
+                  } as SuccessLoginEffectAction<A, R>)
+              )
             )
           }),
           catchError((error) =>
             of({
               type: LOGIN_FAILURE,
               error,
-            })
+            } as FailureLoginEffectAction)
           )
         )
       })
@@ -160,7 +185,7 @@ export function makePerformLogin(
     .subscribe((action) => {
       if (action.type === LOGIN_SUCCESS) {
         // Login Flow Success
-        const [loginResponse, user] = action.payload
+        const { loginResponse, user } = action.payload
         const { accessToken, refreshToken, expires = null } = loginResponse
         // Save the token ref GANG!
         tokenRef.current = { accessToken, refreshToken, expires }
@@ -187,6 +212,13 @@ export function makePerformLogin(
       }
     })
 
-  const performLogin = (loginCredentials) => loginTrigger.next(loginCredentials)
-  return [performLogin, () => subscription.unsubscribe()]
+  const performLogin = (loginCredentials: C) => {
+    loginTrigger.next(loginCredentials)
+  }
+
+  const unsubscribe = () => {
+    subscription.unsubscribe()
+  }
+
+  return [performLogin, unsubscribe]
 }

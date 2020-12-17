@@ -1,28 +1,88 @@
 import React, {
+  Reducer,
   useCallback,
   createContext,
   useMemo,
   useEffect,
   useReducer,
   useRef,
+  ReactNode,
 } from 'react'
-import { Subject } from 'rxjs'
-import { makeStorage } from './storage'
-import { useConstant } from './helperHooks'
+import { Observable, Subject } from 'rxjs'
+import { makeStorage, StorageBackend } from './storage'
+import useConstant from './useConstant'
 import { bootAuth, makePerformLogin } from './authEffects'
 import makeCallApiRx from './callApiRx'
 // Reducer stuff
-import authReducer, { initialState } from './reducer'
+import authReducer, { AuthStateShape, initialState } from './reducer'
 import bindActionCreators from './bindActionCreators'
-import * as actionCreators from './actions'
-import { LOGOUT, SET_TOKENS } from './actionTypes'
+import * as actionCreators from './actionCreators'
+import { AuthActions, LOGOUT, SET_TOKENS } from './actionTypes'
+import {
+  AuthTokens,
+  CurryAuthApiFn,
+  CurryAuthApiFnPromise,
+  LoginCall,
+  MeCall,
+  RefreshTokenCall,
+} from './types'
+
+export interface AuthState {
+  bootstrappedAuth: boolean
+  authenticated: boolean
+  loginLoading: boolean
+  loginError: any
+}
+
+export interface AuthUser<U = any, A = any> {
+  token: A | null
+  user: U | null
+}
+
+export interface AuthActionCreators<A = any, R = any, U = any, C = any> {
+  callAuthApiObservable<O>(
+    apiFn: CurryAuthApiFn<A, O>,
+    ...args: any[]
+  ): Observable<O>
+
+  callAuthApiPromise<O>(
+    apiFn: CurryAuthApiFnPromise<A, O>,
+    ...args: any[]
+  ): Promise<O>
+
+  updateUser(user: U): void
+
+  patchUser(partialUser: Partial<U>): void
+
+  clearLoginError(): void
+
+  setTokens(authTokens: AuthTokens<A, R>): void
+
+  login(loginCredentials: C): void
+
+  logout(): void
+}
 
 // Declare Eazy Auth contexts
-export const AuthStateContext = createContext(initialState)
-export const AuthUserContext = createContext(null)
-export const AuthActionsContext = createContext({})
+export const AuthStateContext = createContext<AuthState>(null as any)
+export const AuthUserContext = createContext<AuthUser>(null as any)
+export const AuthActionsContext = createContext<AuthActionCreators>(null as any)
 
-export default function Auth({
+interface AuthProps<A = any, R = any, U = any, C = any> {
+  children?: ReactNode
+  render?: (
+    actions: AuthActionCreators<A, R, U, C>,
+    authState: AuthState,
+    authUser: AuthUser<U, A>
+  ) => ReactNode
+  loginCall: LoginCall<C, A, R>
+  meCall: MeCall<A, U>
+  refreshTokenCall?: RefreshTokenCall<A, R>
+  storageBackend?: StorageBackend | false
+  storageNamespace?: string
+}
+
+export default function Auth<A = any, R = any, U = any, C = any>({
   children,
   render,
   loginCall,
@@ -30,21 +90,24 @@ export default function Auth({
   refreshTokenCall,
   storageBackend,
   storageNamespace = 'auth',
-}) {
-  const [state, originalDispatch] = useReducer(authReducer, initialState)
+}: AuthProps<A, R, U, C>) {
+  const [state, originalDispatch] = useReducer<
+    Reducer<AuthStateShape<A, R, U>, AuthActions>
+  >(authReducer, initialState)
+
   const [actionObservable, dispatch] = useConstant(() => {
-    const actionSubject = new Subject()
-    const dispatch = (action) => {
+    const actionSubject = new Subject<AuthActions>()
+    const dispatch = (action: AuthActions) => {
       originalDispatch(action)
       actionSubject.next(action)
     }
     return [actionSubject.asObservable(), dispatch]
   })
 
-  const storage = useMemo(() => makeStorage(storageBackend, storageNamespace), [
-    storageBackend,
-    storageNamespace,
-  ])
+  const storage = useMemo(
+    () => makeStorage<A, R>(storageBackend, storageNamespace),
+    [storageBackend, storageNamespace]
+  )
 
   const { bootstrappedAuth, accessToken, loginLoading, loginError } = state
 
@@ -59,7 +122,7 @@ export default function Auth({
   // for your rendering is only a detail implementation of how your
   // server rember who you are ... So if a token change isn't important for
   // rendering but is important for the (*future*) for side effects
-  const tokenRef = useRef(null)
+  const tokenRef = useRef<AuthTokens<A, R> | null>(null)
 
   // Is authenticated when has an access token eazy
   // This line can't look stupid but is very very important
@@ -76,7 +139,7 @@ export default function Auth({
   // should re-booting ma men eazy autth bho maybe check 4 future troubles
   // and come here again
   useEffect(() => {
-    return bootAuth(
+    return bootAuth<A, R>(
       meCall,
       refreshTokenCall,
       storage,
@@ -84,21 +147,21 @@ export default function Auth({
       tokenRef,
       bootRef
     )
-  }, [meCall, refreshTokenCall, storage, dispatch])
+  }, [dispatch, meCall, refreshTokenCall, storage])
 
   // ~~ Make Actions ~~~
 
   // Actions creator should't change between renders
-  const bindedActionCreators = useConstant(() =>
+  const boundActionCreators = useConstant(() =>
     bindActionCreators(actionCreators, dispatch)
   )
 
   const [performLogin, unsubscribeFromLogin] = useConstant(() =>
-    makePerformLogin(loginCall, meCall, storage, dispatch, tokenRef)
+    makePerformLogin<A, R, U, C>(loginCall, meCall, storage, dispatch, tokenRef)
   )
 
   const login = useCallback(
-    (loginCredentials) => {
+    (loginCredentials: C) => {
       if (
         // Is eazy auth boostrapped?
         bootstrappedAuth &&
@@ -115,7 +178,7 @@ export default function Auth({
     // Clear token ref
     tokenRef.current = null
     // Trigger log out
-    dispatch({ type: LOGOUT, payload: {} })
+    dispatch({ type: LOGOUT })
     storage.removeTokens()
   }, [storage, dispatch])
 
@@ -126,8 +189,7 @@ export default function Auth({
   }, [performLogout, authenticated])
 
   const setTokens = useCallback(
-    ({ accessToken, refreshToken, expires }) => {
-      const tokensBag = { accessToken, refreshToken, expires }
+    (tokensBag: AuthTokens<A, R>) => {
       tokenRef.current = tokensBag
       dispatch({
         type: SET_TOKENS,
@@ -157,7 +219,7 @@ export default function Auth({
   // Memoized actions
   const actions = useMemo(
     () => ({
-      ...bindedActionCreators,
+      ...boundActionCreators,
       callAuthApiPromise,
       callAuthApiObservable,
       login,
@@ -167,7 +229,7 @@ export default function Auth({
     [
       login,
       logout,
-      bindedActionCreators,
+      boundActionCreators,
       callAuthApiPromise,
       callAuthApiObservable,
       setTokens,
@@ -186,7 +248,7 @@ export default function Auth({
     [authenticated, bootstrappedAuth, loginLoading, loginError]
   )
 
-  const userState = useMemo(
+  const authUser: AuthUser<U, A> = useMemo(
     () => ({
       user: state.user,
       token: accessToken,
@@ -205,9 +267,9 @@ export default function Auth({
   return (
     <AuthActionsContext.Provider value={actions}>
       <AuthStateContext.Provider value={authState}>
-        <AuthUserContext.Provider value={userState}>
+        <AuthUserContext.Provider value={authUser}>
           {typeof render === 'function'
-            ? render(actions, authState, userState)
+            ? render(actions, authState, authUser)
             : children}
         </AuthUserContext.Provider>
       </AuthStateContext.Provider>

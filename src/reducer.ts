@@ -25,9 +25,25 @@ import {
 
   // Logout action
   LOGOUT,
+  AuthActions,
 } from './actionTypes'
 
-export const initialState = {
+export interface AuthStateShape<A = any, R = any, U = any> {
+  // Is auth initialized?
+  bootstrappingAuth: boolean
+  bootstrappedAuth: boolean
+  // Current logged user
+  user: U | null
+  // Tokens
+  accessToken: A | null
+  refreshToken: R | null
+  expires?: number | null
+  // Login state
+  loginLoading: boolean
+  loginError: any
+}
+
+export const initialState: AuthStateShape = {
   // Is auth initialized?
   bootstrappingAuth: false,
   bootstrappedAuth: false,
@@ -42,11 +58,11 @@ export const initialState = {
   loginError: null,
 }
 
-const authReducer = (
-  previousState = initialState,
-  { type, payload, error }
-) => {
-  switch (type) {
+export default function authReducer<A = any, R = any, U = any>(
+  previousState: AuthStateShape<A, R, U> = initialState,
+  action: AuthActions<A, R, U>
+): AuthStateShape<A, R, U> {
+  switch (action.type) {
     case LOGIN_LOADING:
       return {
         ...previousState,
@@ -57,7 +73,7 @@ const authReducer = (
       return {
         ...previousState,
         loginLoading: false,
-        loginError: error,
+        loginError: action.error,
       }
     case CLEAR_LOGIN_ERROR: {
       if (previousState.loginError === null) {
@@ -72,10 +88,10 @@ const authReducer = (
       return {
         ...previousState,
         loginLoading: false,
-        user: payload.user,
-        accessToken: payload.accessToken,
-        refreshToken: payload.refreshToken,
-        expires: payload.expires,
+        user: action.payload.user,
+        accessToken: action.payload.accessToken,
+        refreshToken: action.payload.refreshToken ?? null,
+        expires: action.payload.expires,
         // logoutFromPermission: false,
       }
     case BOOTSTRAP_AUTH_START:
@@ -89,13 +105,13 @@ const authReducer = (
         bootstrappedAuth: true,
         bootstrappingAuth: false,
       }
-      if (payload.authenticated) {
+      if (action.payload.authenticated) {
         const {
           user,
           accessToken,
           refreshToken = null,
           expires = null,
-        } = payload
+        } = action.payload
         return {
           ...nextState,
           user,
@@ -109,29 +125,29 @@ const authReducer = (
     case SET_TOKENS:
       return {
         ...previousState,
-        expires: payload.expires,
-        accessToken: payload.accessToken,
-        refreshToken: payload.refreshToken,
+        expires: action.payload.expires,
+        accessToken: action.payload.accessToken,
+        refreshToken: action.payload.refreshToken,
       }
     case TOKEN_REFRESHED:
       return {
         ...previousState,
-        expires: payload.expires,
-        accessToken: payload.accessToken,
-        refreshToken: payload.refreshToken,
+        expires: action.payload.expires,
+        accessToken: action.payload.accessToken,
+        refreshToken: action.payload.refreshToken,
       }
     case UPDATE_USER:
       return {
         ...previousState,
-        user: payload,
+        user: action.payload,
       }
     case PATCH_USER:
       return {
         ...previousState,
         user: {
           ...previousState.user,
-          ...payload,
-        },
+          ...action.payload,
+        } as U,
       }
     case LOGOUT:
       return {
@@ -143,5 +159,3 @@ const authReducer = (
       return previousState
   }
 }
-
-export default authReducer

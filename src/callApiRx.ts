@@ -1,4 +1,16 @@
-import { Subject, concat, of, defer, from, empty, throwError } from 'rxjs'
+import { format } from 'prettier'
+import { Dispatch, MutableRefObject } from 'react'
+import {
+  Subject,
+  concat,
+  of,
+  defer,
+  from,
+  throwError,
+  Observable,
+  EMPTY,
+  ConnectableObservable,
+} from 'rxjs'
 import {
   filter,
   exhaustMap,
@@ -14,7 +26,18 @@ import {
   TOKEN_REFRESHED,
   TOKEN_REFRESHING,
   BOOTSTRAP_AUTH_END,
+  AuthActions,
+  TokenRefreshedAction,
+  LogoutAction,
+  TokenRefreshingAction,
 } from './actionTypes'
+import { AuthStorage } from './storage'
+import {
+  AuthTokens,
+  RefreshTokenCall,
+  CurryAuthApiFn,
+  CurryAuthApiFnPromise,
+} from './types'
 
 // Emulate a 401 Unauthorized from server ....
 const UNAUTHORIZED_ERROR_SHAPE = {
@@ -22,7 +45,7 @@ const UNAUTHORIZED_ERROR_SHAPE = {
   fromRefresh: true,
 }
 
-const tokenRefreshed = (refreshedTokens) => ({
+const tokenRefreshed = (refreshedTokens: AuthTokens) => ({
   type: TOKEN_REFRESHED,
   payload: refreshedTokens,
 })
@@ -31,16 +54,18 @@ const tokenRefreshing = () => ({
   type: TOKEN_REFRESHING,
 })
 
+export type LogOutCb = () => void
+
 // Wecolme 2 ~ H E L L ~
 // callApi implemented using rxjs too keep only 1 refreshing task at time
-export default function makeCallApiRx(
-  refreshTokenCall,
-  dispatch,
-  storage,
-  tokenRef,
-  bootRef,
-  actionObservable,
-  logout
+export default function makeCallApiRx<A, R>(
+  refreshTokenCall: RefreshTokenCall<A, R> | undefined,
+  dispatch: Dispatch<AuthActions>,
+  storage: AuthStorage<A, R>,
+  tokenRef: MutableRefObject<AuthTokens<A, R> | null>,
+  bootRef: MutableRefObject<boolean>,
+  actionObservable: Observable<AuthActions>,
+  logout: LogOutCb
 ) {
   let refreshingSemaphore = false
 
@@ -55,10 +80,12 @@ export default function makeCallApiRx(
   // An Observable that perform the refresh token call
   // until logout was dispatched and emit actions
   const refreshRoutine = refreshEmitter.asObservable().pipe(
-    exhaustMap((refreshToken) => {
+    exhaustMap((refreshToken: any) => {
       return concat(
         of(tokenRefreshing()),
-        from(refreshTokenCall(refreshToken)).pipe(
+        from(
+          refreshTokenCall ? refreshTokenCall(refreshToken) : throwError(null)
+        ).pipe(
           map((refreshResponse) =>
             tokenRefreshed({
               accessToken: refreshResponse.accessToken,
@@ -72,7 +99,9 @@ export default function makeCallApiRx(
       )
     }),
     publish()
-  )
+  ) as ConnectableObservable<
+    LogoutAction | TokenRefreshedAction | TokenRefreshingAction
+  >
 
   // Make an Observable that complete with access token
   // when TOKEN_REFRESHED action is dispatched
@@ -88,7 +117,7 @@ export default function makeCallApiRx(
         if (action.type === LOGOUT) {
           return throwError(UNAUTHORIZED_ERROR_SHAPE)
         }
-        return of(action.payload.accessToken)
+        return of((action as TokenRefreshedAction).payload.accessToken)
       })
     )
   }
@@ -106,10 +135,10 @@ export default function makeCallApiRx(
       waitBootObservable = actionObservable.pipe(
         filter((action) => action.type === BOOTSTRAP_AUTH_END),
         take(1),
-        mergeMap(() => empty())
+        mergeMap(() => EMPTY)
       )
     } else {
-      waitBootObservable = empty()
+      waitBootObservable = EMPTY
     }
 
     return concat(
@@ -138,7 +167,7 @@ export default function makeCallApiRx(
   // Make an observable that refresh token
   // only with no pending refresh is in place
   // complete \w refresh token or throw a 401 like error
-  function refreshOnUnauth(accessToken2Refresh) {
+  function refreshOnUnauth(accessToken2Refresh: A) {
     const { accessToken = null, refreshToken = null } = tokenRef.current || {}
 
     if (accessToken === null) {
@@ -166,11 +195,14 @@ export default function makeCallApiRx(
   }
 
   // Logout user when an unauthorized error happens or refresh failed
-  function unauthLogout(badAccessToken, error) {
+  function unauthLogout(badAccessToken: A, error: any) {
     const { accessToken = null } = tokenRef.current || {}
-    const refreshing = refreshingSemaphore
 
-    if (accessToken !== null && !refreshing && accessToken === badAccessToken) {
+    if (
+      accessToken !== null &&
+      !refreshingSemaphore &&
+      accessToken === badAccessToken
+    ) {
       if (typeof error === 'object' && error.status === 401) {
         logout()
       } /*else if (typeof error === 'object' && error.status === 403) {
@@ -179,7 +211,12 @@ export default function makeCallApiRx(
     }
   }
 
-  function onObsevableError(error, apiFn, firstAccessToken, args) {
+  function onObsevableError<O>(
+    error: any,
+    apiFn: CurryAuthApiFn<A, O>,
+    firstAccessToken: A,
+    args: any[]
+  ): Observable<O> {
     if (firstAccessToken !== null) {
       if (typeof refreshTokenCall !== 'function') {
         // Refresh can't be called
@@ -204,7 +241,10 @@ export default function makeCallApiRx(
     return throwError(error)
   }
 
-  function callAuthApiObservable(apiFn, ...args) {
+  function callAuthApiObservable<O>(
+    apiFn: CurryAuthApiFn<A, O>,
+    ...args: any[]
+  ): Observable<O> {
     return getAccessToken().pipe(
       mergeMap((firstAccessToken) =>
         from(apiFn(firstAccessToken)(...args)).pipe(
@@ -216,7 +256,10 @@ export default function makeCallApiRx(
     )
   }
 
-  function callAuthApiPromise(apiFn, ...args) {
+  function callAuthApiPromise<O>(
+    apiFn: CurryAuthApiFnPromise<A, O>,
+    ...args: any[]
+  ): Promise<O> {
     return getAccessToken()
       .toPromise()
       .then((firstAccessToken) => {

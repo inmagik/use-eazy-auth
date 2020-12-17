@@ -1,9 +1,34 @@
 import React, { useEffect, useState } from 'react'
-import { renderHook, act as actTest } from '@testing-library/react-hooks'
 import { render, fireEvent, act } from '@testing-library/react'
-import '@testing-library/jest-dom/extend-expect'
-import Auth from '../Auth'
-import { useAuthActions, useAuthState, useAuthUser } from '../hooks'
+import Auth, { useAuthState, useAuthUser, useAuthActions } from '../index'
+import { AuthTokens } from '../types'
+
+interface TestCallBack<V = any> {
+  (value: V): void
+}
+
+interface DummyUser {
+  username: string
+}
+
+interface DummyLoginCredentials {
+  username: string
+  password: string
+}
+
+// Util component to check current auth user
+const MaHome = () => {
+  const { user } = useAuthUser<DummyUser, string>()
+  const { logout } = useAuthActions()
+  return (
+    <div>
+      Ma User <div data-testid="username">{(user as DummyUser).username}</div>
+      <button data-testid="logout-btn" onClick={logout}>
+        Logout
+      </button>
+    </div>
+  )
+}
 
 // Util component to check da auth state
 const WhatInMaAuth = () => {
@@ -20,23 +45,14 @@ const WhatInMaAuth = () => {
   )
 }
 
-// Util component to check current auth user
-const MaHome = () => {
-  const { user } = useAuthUser()
-  const { logout } = useAuthActions()
-  return (
-    <div>
-      Ma User <div data-testid="username">{user.username}</div>
-      <button data-testid="logout-btn" onClick={logout}>
-        Logout
-      </button>
-    </div>
-  )
-}
-
 // Util login component
 const Login = () => {
-  const { login } = useAuthActions()
+  const { login } = useAuthActions<
+    string,
+    never,
+    DummyUser,
+    DummyLoginCredentials
+  >()
   const { loginLoading, loginError } = useAuthState()
   return (
     <form
@@ -53,14 +69,14 @@ const Login = () => {
   )
 }
 
-describe('Auth', () => {
+describe('Auth DOM', () => {
   it('should check local storage and not auth user when nothing in local storage', async () => {
     // Fake da calls
     const loginCall = jest.fn()
     const meCall = jest.fn()
 
     // Fake an empty local storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -99,16 +115,16 @@ describe('Auth', () => {
     // Fake da calls
     const loginCall = jest.fn()
     // Hack for manual resolve the me promise
-    let resolveMe
+    let resolveMe: TestCallBack<DummyUser>
     const meCall = jest.fn(
       () =>
-        new Promise((resolve) => {
+        new Promise<DummyUser>((resolve) => {
           resolveMe = resolve
         })
     )
 
     // Fake a good storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -170,16 +186,16 @@ describe('Auth', () => {
     // Fake da calls
     const loginCall = jest.fn()
     // Hack for manual resolve the me promise
-    let rejectMe
+    let rejectMe: TestCallBack
     const meCall = jest.fn(
       () =>
-        new Promise((resolve, reject) => {
+        new Promise<never>((resolve, reject) => {
           rejectMe = reject
         })
     )
 
     // Fake a good storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -239,23 +255,23 @@ describe('Auth', () => {
   it('should login and authenticate user', async () => {
     // Fake da calls
     // Manual trigger da login
-    let resolveLogin
+    let resolveLogin: TestCallBack<AuthTokens<number>>
     const loginCall = jest.fn(
       () =>
-        new Promise((resolve) => {
+        new Promise<AuthTokens<number>>((resolve) => {
           resolveLogin = resolve
         })
     )
-    let resolveMe
+    let resolveMe: TestCallBack<DummyUser>
     const meCall = jest.fn(
       () =>
-        new Promise((resolve) => {
+        new Promise<DummyUser>((resolve) => {
           resolveMe = resolve
         })
     )
 
     // Fake an empty local storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -303,13 +319,13 @@ describe('Auth', () => {
     // Time 2 Login!
     fireEvent.click(getByTestId('login-btn'))
     // Login performing button should be disabled heheheh
-    expect(getByTestId('login-btn').disabled).toBe(true)
+    expect((getByTestId('login-btn') as HTMLButtonElement).disabled).toBe(true)
     // Run login side effect!!!
     await act(async () => {
       resolveLogin({ accessToken: 23 })
     })
     // Me not called login still loading
-    expect(getByTestId('login-btn').disabled).toBe(true)
+    expect((getByTestId('login-btn') as HTMLButtonElement).disabled).toBe(true)
     // Run me effect!
     await act(async () => {
       resolveMe({ username: 'Gio Va' })
@@ -336,17 +352,17 @@ describe('Auth', () => {
   it('should not login when bad credentials', async () => {
     // Fake da calls
     // Manual trigger da login
-    let rejectLogin
+    let rejectLogin: TestCallBack
     const loginCall = jest.fn(
       () =>
-        new Promise((resolve, reject) => {
+        new Promise<never>((resolve, reject) => {
           rejectLogin = reject
         })
     )
     const meCall = jest.fn()
 
     // Fake an empty local storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -394,13 +410,13 @@ describe('Auth', () => {
     // Time 2 Login!
     fireEvent.click(getByTestId('login-btn'))
     // Login performing button should be disabled heheheh
-    expect(getByTestId('login-btn').disabled).toBe(true)
+    expect((getByTestId('login-btn') as HTMLButtonElement).disabled).toBe(true)
     // Run login side effect!!!
     await act(async () => {
       rejectLogin('Fuckk Offf')
     })
     // Finish login loading
-    expect(getByTestId('login-btn').disabled).toBe(false)
+    expect((getByTestId('login-btn') as HTMLButtonElement).disabled).toBe(false)
     // Login call should be called
     expect(loginCall).toHaveBeenLastCalledWith({
       username: 'giova',
@@ -417,16 +433,16 @@ describe('Auth', () => {
     // Fake da calls
     const loginCall = jest.fn()
     // Hack for manual resolve the me promise
-    let resolveMe
+    let resolveMe: TestCallBack<DummyUser>
     const meCall = jest.fn(
       () =>
-        new Promise((resolve) => {
+        new Promise<DummyUser>((resolve) => {
           resolveMe = resolve
         })
     )
 
     // Fake a good storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -495,21 +511,21 @@ describe('Auth', () => {
     // Fake da calls
     const loginCall = jest.fn()
     // Hack for manual resolve the me promise
-    let resolveMe
+    let resolveMe: TestCallBack<DummyUser>
     const meCall = jest.fn(
       () =>
-        new Promise((resolve) => {
+        new Promise<DummyUser>((resolve) => {
           resolveMe = resolve
         })
     )
     const getUserStatus = jest.fn(() => () =>
-      new Promise((resolve) => {
+      new Promise<string>((resolve) => {
         resolve('Awesome')
       })
     )
 
     // Fake a good storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -572,25 +588,25 @@ describe('Auth', () => {
     // Fake da calls
     const loginCall = jest.fn()
     // Hack for manual resolve the me promise
-    let resolveMe
+    let resolveMe: TestCallBack<DummyUser>
     const meCall = jest.fn(
       () =>
-        new Promise((resolve) => {
+        new Promise<DummyUser>((resolve) => {
           resolveMe = resolve
         })
     )
     const getUserStatus = jest.fn(() => () =>
-      new Promise((resolve, reject) => {
+      new Promise<never>((resolve, reject) => {
         reject({ status: 401 })
       })
     )
 
     const getUserStatus2 = jest.fn(() => () =>
-      new Promise((resolve) => resolve('XD'))
+      new Promise<string>((resolve) => resolve('XD'))
     )
 
     // Fake a good storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -677,25 +693,25 @@ describe('Auth', () => {
   it('should try to refresh token on boot when me give 401', async () => {
     // Fake da calls
     const loginCall = jest.fn()
-    let rejectMe
-    let resolveMe
+    let rejectMe: TestCallBack
+    let resolveMe: TestCallBack<DummyUser>
     const meCall = jest.fn(
       () =>
-        new Promise((resolve, reject) => {
+        new Promise<DummyUser>((resolve, reject) => {
           resolveMe = resolve
           rejectMe = reject
         })
     )
-    let resolveRefresh
+    let resolveRefresh: TestCallBack<AuthTokens<number, number>>
     const refreshTokenCall = jest.fn(
       () =>
-        new Promise((resolve, reject) => {
+        new Promise<AuthTokens<number, number>>((resolve, reject) => {
           resolveRefresh = resolve
         })
     )
 
     // Fake a stroage \w a bad access token and good refresh
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -759,7 +775,9 @@ describe('Auth', () => {
 
     // Now should we start the refresh
     expect(refreshTokenCall).toHaveBeenLastCalledWith(777)
-    resolveRefresh({ accessToken: 2323, refreshToken: 69 })
+    await act(async () => {
+      resolveRefresh({ accessToken: 2323, refreshToken: 69 })
+    })
 
     await refreshTokenCall.mock.results[0].value
 
@@ -788,31 +806,31 @@ describe('Auth', () => {
     // Fake da calls
     const loginCall = jest.fn()
     // Hack for manual resolve the me promise
-    let resolveMe
+    let resolveMe: TestCallBack<DummyUser>
     const meCall = jest.fn(
       () =>
-        new Promise((resolve) => {
+        new Promise<DummyUser>((resolve) => {
           resolveMe = resolve
         })
     )
-    let resolveApi
-    let rejectApi
+    let resolveApi: TestCallBack<string>
+    let rejectApi: TestCallBack
     const getUserStatus = jest.fn(() => () =>
-      new Promise((resolve, reject) => {
+      new Promise<string>((resolve, reject) => {
         resolveApi = resolve
         rejectApi = reject
       })
     )
-    let resolveRefresh
+    let resolveRefresh: TestCallBack<AuthTokens<number, number>>
     const refreshTokenCall = jest.fn(
       () =>
-        new Promise((resolve, reject) => {
+        new Promise<AuthTokens<number, number>>((resolve, reject) => {
           resolveRefresh = resolve
         })
     )
 
     // Fake a good storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -877,7 +895,9 @@ describe('Auth', () => {
     // The api fn provided should be called \w token
     expect(getUserStatus).toHaveBeenLastCalledWith(23)
 
-    rejectApi({ status: 401 })
+    await act(async () => {
+      rejectApi({ status: 401 })
+    })
 
     // Wait reject ...
     try {
@@ -896,7 +916,7 @@ describe('Auth', () => {
     expect(getUserStatus).toHaveBeenNthCalledWith(2, 2323)
     // Resolve fake API
     await act(async () => {
-      await resolveApi('Awesome')
+      resolveApi('Awesome')
     })
     // Check token saved in storage
     expect(window.localStorage.setItem).toHaveBeenLastCalledWith(
@@ -957,7 +977,7 @@ describe('Auth', () => {
     // Fake da calls
     const loginCall = jest.fn()
     // Hack for manual resolve the me promise
-    let resolveMe
+    let resolveMe: TestCallBack<DummyUser>
     const meCall = jest.fn(
       () =>
         new Promise((resolve) => {
@@ -966,7 +986,7 @@ describe('Auth', () => {
     )
 
     // Fake a good storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -1012,17 +1032,17 @@ describe('Auth', () => {
   it('should not set state on umounted component while login', async () => {
     // Fake da calls
     // Manual trigger da login
-    let resolveLogin
+    let resolveLogin: TestCallBack<AuthTokens<number, never>>
     const loginCall = jest.fn(
       () =>
-        new Promise((resolve) => {
+        new Promise<AuthTokens<number, never>>((resolve) => {
           resolveLogin = resolve
         })
     )
     const meCall = jest.fn(() => Promise.resolve({ name: 'X' }))
 
     // Fake an empty local storage
-    const resolvesGetItem = []
+    const resolvesGetItem: TestCallBack[] = []
     const localStorageMock = {
       getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
       setItem: jest.fn(),
@@ -1068,138 +1088,5 @@ describe('Auth', () => {
       resolveLogin({ accessToken: 23 })
     })
     expect(spyConsoleError).not.toHaveBeenCalled()
-  })
-  it('should be aware of calls failure', async () => {
-    const loginCall = jest.fn().mockRejectedValueOnce('GioVa')
-    const meCall = jest.fn().mockRejectedValue('GioVa')
-
-    // Fake an empty local storage
-    const resolvesGetItem = []
-    const localStorageMock = {
-      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-    }
-    Object.defineProperty(global, '_localStorage', {
-      value: localStorageMock,
-      writable: true,
-    })
-
-    const AuthWrapper = ({ children }) => (
-      <Auth loginCall={loginCall} meCall={meCall}>
-        {children}
-      </Auth>
-    )
-
-    const { result } = renderHook(() => useAuthActions(), {
-      wrapper: AuthWrapper,
-    })
-
-    await actTest(async () => {
-      resolvesGetItem[0](null)
-    })
-
-    await actTest(async () => {
-      result.current.login()
-    })
-    expect(loginCall).toHaveBeenCalledTimes(1)
-    expect(meCall).toHaveBeenCalledTimes(0)
-
-    loginCall.mockRejectedValueOnce('Fuck')
-    await actTest(async () => {
-      result.current.login()
-    })
-    expect(loginCall).toHaveBeenCalledTimes(2)
-    expect(meCall).toHaveBeenCalledTimes(0)
-
-    loginCall.mockResolvedValueOnce('Yeaah')
-    await actTest(async () => {
-      result.current.login()
-    })
-    expect(loginCall).toHaveBeenCalledTimes(3)
-    expect(meCall).toHaveBeenCalledTimes(1)
-
-    loginCall.mockResolvedValueOnce('Yeaah')
-    await actTest(async () => {
-      result.current.login()
-    })
-    expect(loginCall).toHaveBeenCalledTimes(4)
-    expect(meCall).toHaveBeenCalledTimes(2)
-  })
-
-  it('Should give an action to imperative setTokens', async () => {
-    // Fake da calls
-    const loginCall = jest.fn()
-    // Hack for manual resolve the me promise
-    let resolveMe
-    const meCall = jest.fn(
-      () =>
-        new Promise((resolve) => {
-          resolveMe = resolve
-        })
-    )
-
-    // Fake a good storage
-    const resolvesGetItem = []
-    const localStorageMock = {
-      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
-      setItem: jest.fn(),
-      removeItem: jest.fn(),
-    }
-    Object.defineProperty(global, '_localStorage', {
-      value: localStorageMock,
-      writable: true,
-    })
-
-    const AuthWrapper = ({ children }) => (
-      <Auth loginCall={loginCall} meCall={meCall}>
-        {children}
-      </Auth>
-    )
-
-    function useAllAuth() {
-      return [useAuthUser(), useAuthActions()]
-    }
-
-    const { result } = renderHook(() => useAllAuth(), {
-      wrapper: AuthWrapper,
-    })
-
-    await actTest(async () => {
-      resolvesGetItem[0](JSON.stringify({ accessToken: 23 }))
-    })
-
-    await actTest(async () => {
-      resolveMe({ name: 'Giova' })
-    })
-
-    expect(result.current[0]).toEqual({
-      user: { name: 'Giova' },
-      token: 23,
-    })
-
-    await actTest(async () => {
-      result.current[1].setTokens({ accessToken: 99 })
-    })
-
-    // Token in ma state
-    expect(result.current[0]).toEqual({
-      user: { name: 'Giova' },
-      token: 99,
-    })
-
-    // TOken in storage
-    expect(localStorageMock.setItem).toHaveBeenCalledWith('auth', JSON.stringify({
-      accessToken: 99,
-    }))
-
-    const fakeApi = jest.fn((t) => () => Promise.resolve(88))
-
-    await actTest(async () => {
-      await result.current[1].callAuthApiPromise(fakeApi)
-    })
-
-    // Token for ma caller
-    expect(fakeApi).toHaveBeenCalledWith(99)
   })
 })
