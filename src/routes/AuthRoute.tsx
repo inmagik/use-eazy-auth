@@ -1,13 +1,30 @@
-import React, { useMemo, isValidElement, createElement } from 'react'
-import { Route, Redirect } from 'react-router-dom'
+import React, { useMemo, createElement, ReactNode, ComponentType } from 'react'
+import { Route, Redirect, RouteProps } from 'react-router-dom'
+import { Location } from 'history'
 import { useAuthState, useAuthUser } from '../hooks'
+
+export interface RedirectAuthRouteCheckProps {
+  redirectTo?: string | Location
+  spinner?: ReactNode
+  spinnerComponent?: ComponentType
+  rememberReferrer?: boolean
+  userRedirectTo: string | null | Location
+  authenticated: boolean
+  bootstrappedAuth: boolean
+  loginLoading: boolean
+}
+
+type RedirectAuthRouteProps = RedirectAuthRouteCheckProps & RouteProps
+
+type Dict = Record<string, any>
 
 const RedirectAuthRoute = React.memo(
   ({
     children,
     component,
     render,
-    spinner = null,
+    spinner,
+    spinnerComponent,
     redirectTo = '/login',
     rememberReferrer = true,
     userRedirectTo,
@@ -15,17 +32,15 @@ const RedirectAuthRoute = React.memo(
     bootstrappedAuth,
     loginLoading,
     ...rest
-  }) => (
+  }: RedirectAuthRouteProps) => (
     <Route
       {...rest}
       render={(props) => {
         if (!bootstrappedAuth || loginLoading) {
-          // Spinner as element as component or null
-          return spinner
-            ? isValidElement(spinner)
-              ? spinner
-              : createElement(spinner)
-            : null
+          // Spinner or Spinner Component
+          return spinnerComponent
+            ? createElement(spinnerComponent)
+            : spinner ?? null
         }
         // User authenticated
         if (authenticated) {
@@ -38,15 +53,16 @@ const RedirectAuthRoute = React.memo(
             ? children
             : component
             ? createElement(component, props)
-            : render(props)
+            : render
+            ? render(props)
+            : null
         }
         // User not authenticated, redirect to login
-        const to =
-          typeof redirectTo === 'string'
-            ? {
-                pathname: redirectTo,
-              }
-            : redirectTo
+        const to: Location<Dict> = (typeof redirectTo === 'string'
+          ? {
+              pathname: redirectTo,
+            }
+          : redirectTo) as Location<Dict>
         return (
           <Redirect
             to={{
@@ -68,11 +84,21 @@ const RedirectAuthRoute = React.memo(
   )
 )
 
+export interface AuthRouteCheckProps<U = any> {
+  redirectTest?: (user: U) => string | null | undefined | Location
+  redirectTo?: string | Location
+  spinner?: ReactNode
+  spinnerComponent?: ComponentType
+  rememberReferrer?: boolean
+}
+
+export type AuthRouteProps<U = any> = AuthRouteCheckProps<U> & RouteProps
+
 /**
  * Ensure user logged otherwise redirect them to login
  *
  */
-export default function AuthRoute({ redirectTest, ...rest }) {
+export default function AuthRoute({ redirectTest, ...rest }: AuthRouteProps) {
   const { authenticated, bootstrappedAuth, loginLoading } = useAuthState()
   const { user } = useAuthUser()
 
