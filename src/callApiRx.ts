@@ -1,4 +1,3 @@
-import { format } from 'prettier'
 import { Dispatch, MutableRefObject } from 'react'
 import {
   Subject,
@@ -153,7 +152,8 @@ export default function makeCallApiRx<A, R>(
         }
 
         const refreshing = refreshingSemaphore
-        // Refresh in place wait from redux
+
+        // Refresh in place wait from store
         if (refreshing) {
           return waitForStoreRefreshObservable()
         }

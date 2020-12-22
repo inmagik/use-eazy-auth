@@ -2,7 +2,7 @@ import React from 'react'
 import { render, act, fireEvent } from '@testing-library/react'
 import { MemoryRouter, Switch, Route, useHistory } from 'react-router-dom'
 import Auth, { useAuthActions } from '../../index'
-import { AuthRoute, GuestRoute } from '../index'
+import { AuthRoute, GuestRoute, MaybeAuthRoute } from '../index'
 import { AuthTokens } from 'src/types'
 
 interface TestCallBack<V = any> {
@@ -113,9 +113,12 @@ describe('AuthRoutes', () => {
                 <Route path="/4n0n">
                   <Anon />
                 </Route>
-                <AuthRoute redirectTo="/4n0n" spinner={'Spinny'} path={'/home'}>
-                  <Home />
-                </AuthRoute>
+                <AuthRoute
+                  redirectTo="/4n0n"
+                  spinner={'Spinny'}
+                  path={'/home'}
+                  component={Home}
+                />
               </Switch>
             </MemoryRouter>
           </div>
@@ -222,7 +225,7 @@ describe('AuthRoutes', () => {
   })
 
   describe('<GuestRoute />', () => {
-    it('should render content when user in unauthenticated', async () => {
+    it('should render content when user is unauthenticated', async () => {
       const loginCall = jest.fn()
 
       const meCall = jest.fn().mockRejectedValue('Bu')
@@ -491,10 +494,9 @@ describe('AuthRoutes', () => {
                 redirectTo="/other"
                 spinner={<SpinnyBoy />}
                 path="/guest"
-              >
-                <Guest />
-              </GuestRoute>
-              <Route path='/other'>
+                component={Guest}
+              />
+              <Route path="/other">
                 <Other />
               </Route>
               <AuthRoute
@@ -528,6 +530,109 @@ describe('AuthRoutes', () => {
 
       // Show other
       expect(getByTestId('other').textContent).toEqual('Other')
+    })
+  })
+
+  describe('<MaybeAuthRoute />', () => {
+    it('should render content when user is unauthenticated ... but wait for boot', async () => {
+      const loginCall = jest.fn()
+
+      const meCall = jest.fn().mockRejectedValue('Bu')
+
+      // Fake stroage
+      const resolvesGetItem: TestCallBack[] = []
+      const localStorageMock = {
+        getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      }
+      Object.defineProperty(global, '_localStorage', {
+        value: localStorageMock,
+        writable: true,
+      })
+
+      function Maybe() {
+        return <div data-testid="maybe">Maybe</div>
+      }
+
+      const App = () => (
+        <Auth loginCall={loginCall} meCall={meCall}>
+          <MemoryRouter initialEntries={['/maybe']} initialIndex={0}>
+            <Switch>
+              <MaybeAuthRoute spinner={<SpinnyBoy />} path="/maybe">
+                <Maybe />
+              </MaybeAuthRoute>
+            </Switch>
+          </MemoryRouter>
+        </Auth>
+      )
+
+      const { getByTestId, queryAllByTestId } = render(<App />)
+
+      // Spinner on the page
+      expect(getByTestId('spinner').textContent).toEqual('Spinny')
+
+      // Local storage
+      await act(async () => {
+        resolvesGetItem[0](null)
+      })
+
+      // No Spinny
+      expect(queryAllByTestId('spinner')).toEqual([])
+      // Show Guest
+      expect(getByTestId('maybe').textContent).toEqual('Maybe')
+    })
+    it('should render content when user is authenticated ... but wait for boot', async () => {
+      const loginCall = jest.fn()
+
+      const meCall = jest.fn().mockResolvedValue({
+        username: 'Gio Va',
+      })
+
+      // Fake stroage
+      const resolvesGetItem: TestCallBack[] = []
+      const localStorageMock = {
+        getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      }
+      Object.defineProperty(global, '_localStorage', {
+        value: localStorageMock,
+        writable: true,
+      })
+
+      function Maybe() {
+        return <div data-testid="maybe">Maybe</div>
+      }
+
+      const App = () => (
+        <Auth loginCall={loginCall} meCall={meCall}>
+          <MemoryRouter initialEntries={['/maybe']} initialIndex={0}>
+            <Switch>
+              <MaybeAuthRoute
+                spinnerComponent={SpinnyBoy}
+                path="/maybe"
+                component={Maybe}
+              />
+            </Switch>
+          </MemoryRouter>
+        </Auth>
+      )
+
+      const { getByTestId, queryAllByTestId } = render(<App />)
+
+      // Spinner on the page
+      expect(getByTestId('spinner').textContent).toEqual('Spinny')
+
+      // Local storage
+      await act(async () => {
+        resolvesGetItem[0]({ accessToken: 23 })
+      })
+
+      // No Spinny
+      expect(queryAllByTestId('spinner')).toEqual([])
+      // Show Guest
+      expect(getByTestId('maybe').textContent).toEqual('Maybe')
     })
   })
 })

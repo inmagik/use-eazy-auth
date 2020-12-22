@@ -1,6 +1,11 @@
-import React, { isValidElement, createElement } from 'react'
-import { Route } from 'react-router-dom'
+import React, { createElement, ReactNode, ComponentType } from 'react'
+import { Route, RouteProps } from 'react-router-dom'
 import { useAuthState } from '../hooks'
+
+export type MaybeAuthRouteProps = {
+  spinner?: ReactNode
+  spinnerComponent?: ComponentType
+} & RouteProps
 
 /**
  * Wait for auth loading before rendering route component
@@ -11,9 +16,10 @@ export default function MaybeAuthRoute({
   children,
   component,
   render,
-  spinner = null,
+  spinner,
+  spinnerComponent,
   ...rest
-}) {
+}: MaybeAuthRouteProps) {
   const { bootstrappedAuth, loginLoading } = useAuthState()
   return (
     <Route
@@ -21,18 +27,18 @@ export default function MaybeAuthRoute({
       render={(props) => {
         if (!bootstrappedAuth || loginLoading) {
           // Spinner as element as component or null
-          return spinner
-            ? isValidElement(spinner)
-              ? spinner
-              : createElement(spinner)
-            : null
+          return spinnerComponent
+            ? createElement(spinnerComponent)
+            : spinner ?? null
         }
         // Render as a Route
         return children
           ? children
           : component
           ? createElement(component, props)
-          : render(props)
+          : render
+          ? render(props)
+          : null
       }}
     />
   )
