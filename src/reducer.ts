@@ -26,6 +26,7 @@ import {
   // Logout action
   LOGOUT,
   AuthActions,
+  FunctionalUpdaterUser,
 } from './actionTypes'
 
 export interface AuthStateShape<A = any, R = any, U = any> {
@@ -136,11 +137,18 @@ export default function authReducer<A = any, R = any, U = any>(
         accessToken: action.payload.accessToken,
         refreshToken: action.payload.refreshToken,
       }
-    case UPDATE_USER:
+    case UPDATE_USER: {
+      const userOrUpdater = action.payload
       return {
         ...previousState,
-        user: action.payload,
+        // NOTE: Improve types when better solution 2
+        // https://github.com/microsoft/TypeScript/issues/37663
+        user:
+          typeof userOrUpdater === 'function'
+            ? (userOrUpdater as FunctionalUpdaterUser<U>)(previousState.user)
+            : userOrUpdater,
       }
+    }
     case PATCH_USER:
       return {
         ...previousState,

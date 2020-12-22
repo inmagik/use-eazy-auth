@@ -42,6 +42,8 @@ export interface TokenRefreshingAction {
   type: typeof TOKEN_REFRESHING
 }
 
+export type FunctionalUpdaterUser<U> = (user: U | null) => U | null
+
 // NOTE: Action collection 4 reducer
 export type AuthActions<A = any, R = any, U = any> =
   | {
@@ -74,7 +76,7 @@ export type AuthActions<A = any, R = any, U = any> =
   | TokenRefreshedAction
   | {
       type: typeof UPDATE_USER
-      payload: U
+      payload: FunctionalUpdaterUser<U> | U | null
     }
   | {
       type: typeof PATCH_USER

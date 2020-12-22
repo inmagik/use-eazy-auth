@@ -17,7 +17,12 @@ import makeCallApiRx from './callApiRx'
 import authReducer, { AuthStateShape, initialState } from './reducer'
 import bindActionCreators from './bindActionCreators'
 import * as actionCreators from './actionCreators'
-import { AuthActions, LOGOUT, SET_TOKENS } from './actionTypes'
+import {
+  AuthActions,
+  FunctionalUpdaterUser,
+  LOGOUT,
+  SET_TOKENS,
+} from './actionTypes'
 import {
   AuthTokens,
   CurryAuthApiFn,
@@ -50,7 +55,7 @@ export interface AuthActionCreators<A = any, R = any, U = any, C = any> {
     ...args: any[]
   ): Promise<O>
 
-  updateUser(user: U): void
+  updateUser(user: U | FunctionalUpdaterUser<U> | null): void
 
   patchUser(partialUser: Partial<U>): void
 
