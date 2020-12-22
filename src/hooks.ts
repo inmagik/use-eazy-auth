@@ -49,7 +49,7 @@ export type LoginResult = ShapeLoginResult &
 
 // TODO: On the very end this hook sucks and realted types sucks
 // in future we must rewrite it or find a more suitable solution
-// here for compatibility reason
+// here for compatibility reasons
 export function useLogin(
   credentialsConf: string[] = ['username', 'password']
 ): LoginResult {

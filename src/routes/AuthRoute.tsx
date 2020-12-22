@@ -3,7 +3,7 @@ import { Route, Redirect, RouteProps } from 'react-router-dom'
 import { Location } from 'history'
 import { useAuthState, useAuthUser } from '../hooks'
 
-export interface RedirectAuthRouteCheckProps {
+type RedirectAuthRouteProps = {
   redirectTo?: string | Location
   spinner?: ReactNode
   spinnerComponent?: ComponentType
@@ -12,9 +12,7 @@ export interface RedirectAuthRouteCheckProps {
   authenticated: boolean
   bootstrappedAuth: boolean
   loginLoading: boolean
-}
-
-type RedirectAuthRouteProps = RedirectAuthRouteCheckProps & RouteProps
+} & RouteProps
 
 type Dict = Record<string, any>
 
@@ -84,15 +82,13 @@ const RedirectAuthRoute = React.memo(
   )
 )
 
-export interface AuthRouteCheckProps<U = any> {
+export type AuthRouteProps<U = any> = {
   redirectTest?: (user: U) => string | null | undefined | Location
   redirectTo?: string | Location
   spinner?: ReactNode
   spinnerComponent?: ComponentType
   rememberReferrer?: boolean
-}
-
-export type AuthRouteProps<U = any> = AuthRouteCheckProps<U> & RouteProps
+} & RouteProps
 
 /**
  * Ensure user logged otherwise redirect them to login

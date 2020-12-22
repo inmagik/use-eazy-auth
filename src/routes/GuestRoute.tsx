@@ -1,6 +1,16 @@
-import React, { isValidElement, createElement } from 'react'
-import { Route, Redirect } from 'react-router-dom'
+import React, { createElement, ReactNode, ComponentType } from 'react'
+import { Route, Redirect, RouteProps } from 'react-router-dom'
+import { Location } from 'history'
 import { useAuthState } from '../hooks'
+
+type Dict = Record<string, any>
+
+export type GuestRouteProps = {
+  redirectTo?: string | Location<Dict>
+  redirectToReferrer?: boolean
+  spinner?: ReactNode
+  spinnerComponent?: ComponentType
+} & RouteProps
 
 /**
  * Redirect to home when user logged in
@@ -10,11 +20,12 @@ export default function GuestRoute({
   children,
   component,
   render,
-  spinner = null,
+  spinner,
+  spinnerComponent,
   redirectTo = '/',
   redirectToReferrer = true,
   ...rest
-}) {
+}: GuestRouteProps) {
   const { authenticated, bootstrappedAuth } = useAuthState()
   return (
     <Route
@@ -22,7 +33,7 @@ export default function GuestRoute({
       render={(props) => {
         if (authenticated) {
           // Redirect to referrer location
-          const { location } = props
+          const { location } = props as { location: Location<Dict> }
           if (redirectToReferrer && location.state && location.state.referrer) {
             return (
               <Redirect
@@ -48,18 +59,18 @@ export default function GuestRoute({
 
         if (!bootstrappedAuth) {
           // Spinner as element as component or null
-          return spinner
-            ? isValidElement(spinner)
-              ? spinner
-              : createElement(spinner)
-            : null
+          return spinnerComponent
+            ? createElement(spinnerComponent)
+            : spinner ?? null
         }
         // Render as a Route
         return children
           ? children
           : component
           ? createElement(component, props)
-          : render(props)
+          : render
+          ? render(props)
+          : null
       }}
     />
   )

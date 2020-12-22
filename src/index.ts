@@ -1,2 +1,2 @@
-export { useAuthState, useAuthActions, useAuthUser } from './hooks'
+export { useAuthState, useAuthActions, useAuthUser, useLogin } from './hooks'
 export { default } from './Auth'
