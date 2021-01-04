@@ -1,12 +1,17 @@
-import React, { createElement, ReactNode, ComponentType } from 'react'
-import { Route, Redirect, RouteProps } from 'react-router-dom'
+import React, {
+  ComponentType,
+  createElement,
+  ReactNode,
+  useContext,
+} from 'react'
+import { Redirect, Route, RouteProps } from 'react-router-dom'
 import { Location } from 'history'
 import { useAuthState } from '../hooks'
-
-type Dict = Record<string, any>
+import AuthRoutesContext from './AuthRoutesContext'
+import { Dictionary } from './types'
 
 export type GuestRouteProps = {
-  redirectTo?: string | Location<Dict>
+  redirectTo?: string | Location<Dictionary>
   redirectToReferrer?: boolean
   spinner?: ReactNode
   spinnerComponent?: ComponentType
@@ -20,12 +25,21 @@ export default function GuestRoute({
   children,
   component,
   render,
-  spinner,
-  spinnerComponent,
-  redirectTo = '/',
-  redirectToReferrer = true,
+  spinner: localSpinner,
+  spinnerComponent: localSpinnerComponent,
+  redirectTo: localRedirectTo,
+  redirectToReferrer: localRedirectToReferrer,
   ...rest
 }: GuestRouteProps) {
+  const routesCtxConfig = useContext(AuthRoutesContext)
+  const spinner =
+    localSpinner === undefined ? routesCtxConfig.spinner : localSpinner
+  const spinnerComponent =
+    localSpinnerComponent ?? routesCtxConfig.spinnerComponent
+  const redirectTo = localRedirectTo ?? routesCtxConfig.guestRedirectTo ?? '/'
+  const redirectToReferrer =
+    localRedirectToReferrer ?? routesCtxConfig.redirectToReferrer ?? true
+
   const { authenticated, bootstrappedAuth } = useAuthState()
   return (
     <Route
@@ -33,7 +47,7 @@ export default function GuestRoute({
       render={(props) => {
         if (authenticated) {
           // Redirect to referrer location
-          const { location } = props as { location: Location<Dict> }
+          const { location } = props as { location: Location<Dictionary> }
           if (redirectToReferrer && location.state && location.state.referrer) {
             return (
               <Redirect

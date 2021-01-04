@@ -1,7 +1,15 @@
-import React, { useMemo, createElement, ReactNode, ComponentType } from 'react'
-import { Route, Redirect, RouteProps } from 'react-router-dom'
+import React, {
+  ComponentType,
+  createElement,
+  ReactNode,
+  useContext,
+  useMemo,
+} from 'react'
+import { Redirect, Route, RouteProps } from 'react-router-dom'
 import { Location } from 'history'
 import { useAuthState, useAuthUser } from '../hooks'
+import AuthRoutesContext from './AuthRoutesContext'
+import { Dictionary } from './types'
 
 type RedirectAuthRouteProps = {
   redirectTo?: string | Location
@@ -13,8 +21,6 @@ type RedirectAuthRouteProps = {
   bootstrappedAuth: boolean
   loginLoading: boolean
 } & RouteProps
-
-type Dict = Record<string, any>
 
 const RedirectAuthRoute = React.memo(
   ({
@@ -56,11 +62,11 @@ const RedirectAuthRoute = React.memo(
             : null
         }
         // User not authenticated, redirect to login
-        const to: Location<Dict> = (typeof redirectTo === 'string'
+        const to: Location<Dictionary> = (typeof redirectTo === 'string'
           ? {
               pathname: redirectTo,
             }
-          : redirectTo) as Location<Dict>
+          : redirectTo) as Location<Dictionary>
         return (
           <Redirect
             to={{
@@ -94,7 +100,21 @@ export type AuthRouteProps<U = any> = {
  * Ensure user logged otherwise redirect them to login
  *
  */
-export default function AuthRoute({ redirectTest, ...rest }: AuthRouteProps) {
+export default function AuthRoute({
+  redirectTest: localRedirectTest,
+  redirectTo: localRedirectTo,
+  spinner: localSpinner,
+  spinnerComponent: localSpinnerComponent,
+  ...rest
+}: AuthRouteProps) {
+  const routesCtxConfig = useContext(AuthRoutesContext)
+  const spinner =
+    localSpinner === undefined ? routesCtxConfig.spinner : localSpinner
+  const spinnerComponent =
+    localSpinnerComponent ?? routesCtxConfig.spinnerComponent
+  const redirectTo = localRedirectTo ?? routesCtxConfig.authRedirectTo
+  const redirectTest = localRedirectTest ?? routesCtxConfig.authRedirectTest
+
   const { authenticated, bootstrappedAuth, loginLoading } = useAuthState()
   const { user } = useAuthUser()
 
@@ -117,6 +137,9 @@ export default function AuthRoute({ redirectTest, ...rest }: AuthRouteProps) {
       authenticated={authenticated}
       bootstrappedAuth={bootstrappedAuth}
       loginLoading={loginLoading}
+      redirectTo={redirectTo}
+      spinner={spinner}
+      spinnerComponent={spinnerComponent}
       {...rest}
     />
   )

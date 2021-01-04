@@ -1,9 +1,10 @@
 import React from 'react'
-import { render, act, fireEvent } from '@testing-library/react'
-import { MemoryRouter, Switch, Route, useHistory } from 'react-router-dom'
+import { act, fireEvent, render } from '@testing-library/react'
+import { Link, MemoryRouter, Route, Switch, useHistory } from 'react-router-dom'
+import { AuthTokens } from 'src/types'
 import Auth, { useAuthActions } from '../../index'
 import { AuthRoute, GuestRoute, MaybeAuthRoute } from '../index'
-import { AuthTokens } from 'src/types'
+import AuthRoutesProvider from '../AuthRoutesProvider'
 
 interface TestCallBack<V = any> {
   (value: V): void
@@ -86,6 +87,59 @@ describe('AuthRoutes', () => {
       expect(queryAllByTestId('spinner')).toEqual([])
       // Ma Home
       expect(getByTestId('home').textContent).toEqual('Home')
+    })
+
+    it('should redirect default to "/login" when user is not authenticated', async () => {
+      const loginCall = jest.fn()
+
+      const meCall = jest.fn()
+
+      // Fake stroage
+      const resolvesGetItem: TestCallBack[] = []
+      const localStorageMock = {
+        getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      }
+      Object.defineProperty(global, '_localStorage', {
+        value: localStorageMock,
+        writable: true,
+      })
+
+      function Login() {
+        return <form data-testid="login">Login</form>
+      }
+
+      const App = () => (
+        <Auth loginCall={loginCall} meCall={meCall}>
+          <div data-testid="main">
+            <MemoryRouter initialEntries={['/home']} initialIndex={0}>
+              <Switch>
+                <Route path="/4n0n">
+                  <Anon />
+                </Route>
+                <GuestRoute path="/login">
+                  <Login />
+                </GuestRoute>
+                <AuthRoute spinner={'Spinny'} path={'/home'} component={Home} />
+              </Switch>
+            </MemoryRouter>
+          </div>
+        </Auth>
+      )
+
+      const { getByTestId } = render(<App />)
+
+      // Spinner on the page
+      expect(getByTestId('main').textContent).toEqual('Spinny')
+
+      // Local storage
+      await act(async () => {
+        resolvesGetItem[0](null)
+      })
+
+      // Anon page
+      expect(getByTestId('login').textContent).toEqual('Login')
     })
 
     it('should redirect when user is not authenticated', async () => {
@@ -272,6 +326,75 @@ describe('AuthRoutes', () => {
       expect(queryAllByTestId('spinner')).toEqual([])
       // Show Guest
       expect(getByTestId('guest').textContent).toEqual('Guest')
+    })
+
+    it('should redirect default to "/" when user is authenticated', async () => {
+      const loginCall = jest.fn()
+
+      const meCall = jest.fn().mockResolvedValue({
+        username: 'Gio Va',
+      })
+
+      // Fake stroage
+      const resolvesGetItem: TestCallBack[] = []
+      const localStorageMock = {
+        getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      }
+      Object.defineProperty(global, '_localStorage', {
+        value: localStorageMock,
+        writable: true,
+      })
+
+      function Guest() {
+        return <div data-testid="guest">Guest</div>
+      }
+
+      function Other() {
+        return <div data-testid="other">Other</div>
+      }
+
+      function MaHome() {
+        return <div data-testid="home">MaHome</div>
+      }
+
+      const App = () => (
+        <Auth loginCall={loginCall} meCall={meCall}>
+          <MemoryRouter initialEntries={['/guest']} initialIndex={0}>
+            <Switch>
+              <GuestRoute spinner={<SpinnyBoy />} path="/guest">
+                <Guest />
+              </GuestRoute>
+              <Route path="/other">
+                <Other />
+              </Route>
+              <AuthRoute path="/" exact>
+                <MaHome />
+              </AuthRoute>
+            </Switch>
+          </MemoryRouter>
+        </Auth>
+      )
+
+      const { getByTestId, queryAllByTestId } = render(<App />)
+
+      // Spinner on the page
+      expect(getByTestId('spinner').textContent).toEqual('Spinny')
+
+      // Local storage
+      await act(async () => {
+        resolvesGetItem[0](JSON.stringify({ accessToken: 23 }))
+      })
+
+      // No Spinny
+      expect(queryAllByTestId('spinner')).toEqual([])
+      // No Guest
+      expect(queryAllByTestId('guest')).toEqual([])
+      // No Other
+      expect(queryAllByTestId('other')).toEqual([])
+      // Show Home
+      expect(getByTestId('home').textContent).toEqual('MaHome')
     })
 
     it('should redirect to given location when user is authenticated', async () => {
@@ -633,6 +756,233 @@ describe('AuthRoutes', () => {
       expect(queryAllByTestId('spinner')).toEqual([])
       // Show Guest
       expect(getByTestId('maybe').textContent).toEqual('Maybe')
+    })
+  })
+
+  describe('<AuthRoutesProvider />', () => {
+    it('should configure global spinners', async () => {
+      const loginCall = jest.fn()
+      const meCall = jest.fn()
+
+      // Fake stroage
+      const resolvesGetItem: TestCallBack[] = []
+      const localStorageMock = {
+        getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      }
+      Object.defineProperty(global, '_localStorage', {
+        value: localStorageMock,
+        writable: true,
+      })
+
+      const NavBar = () => (
+        <div>
+          <Link data-testid="link-to-custom" to="/custom">
+            Custom
+          </Link>
+          <Link data-testid="link-to-empty" to="/empty">
+            Empty
+          </Link>
+          <Link data-testid="link-to-custom-component" to="/custom-component">
+            CustomComponent
+          </Link>
+          <Link data-testid="link-to-maybe" to="/maybe">
+            Maybe
+          </Link>
+          <Link data-testid="link-to-maybe-empty" to="/maybe-empty">
+            Maybe Empty
+          </Link>
+          <Link data-testid="link-to-maybe-custom" to="/maybe-custom">
+            Maybe Custom
+          </Link>
+          <Link
+            data-testid="link-to-maybe-custom-component"
+            to="/maybe-custom-component"
+          >
+            Maybe Custom Component
+          </Link>
+          <Link data-testid="link-to-auth" to="/auth">
+            Auth
+          </Link>
+          <Link data-testid="link-to-auth-empty" to="/auth-empty">
+            Auth Empty
+          </Link>
+          <Link data-testid="link-to-auth-custom" to="/auth-custom">
+            Auth Custom
+          </Link>
+          <Link
+            data-testid="link-to-auth-custom-component"
+            to="/auth-custom-component"
+          >
+            Auth Custom
+          </Link>
+        </div>
+      )
+
+      function CustomSpinnyComponent() {
+        return <div data-testid="spinner">CustomSpinnyComponent</div>
+      }
+
+      function MaybeCustomSpinner({ msg }: { msg?: string }) {
+        return <div data-testid="spinner">MaybeCustomSpinner{msg}</div>
+      }
+
+      function MaybeCustomSpinner2() {
+        return <MaybeCustomSpinner />
+      }
+
+      function AuthSpinner() {
+        return <div data-testid="spinner">AuthSpinnerComponent</div>
+      }
+
+      const App = () => (
+        <Auth loginCall={loginCall} meCall={meCall}>
+          <AuthRoutesProvider spinner={<SpinnyBoy />}>
+            <MemoryRouter initialEntries={['/home']} initialIndex={0}>
+              <NavBar />
+              <Switch>
+                <GuestRoute path={'/home'}>
+                  <Home />
+                </GuestRoute>
+                <GuestRoute path={'/empty'} spinner={null}>
+                  <Home />
+                </GuestRoute>
+                <GuestRoute
+                  path="/custom"
+                  spinner={<div data-testid={'spinner'}>CustomSpinny</div>}
+                >
+                  <Home />
+                </GuestRoute>
+                <GuestRoute
+                  path="/custom-component"
+                  spinnerComponent={CustomSpinnyComponent}
+                >
+                  <Home />
+                </GuestRoute>
+                <MaybeAuthRoute path="/maybe" component={Home} />
+                <MaybeAuthRoute path="/maybe-empty" spinner={null}>
+                  <Home />
+                </MaybeAuthRoute>
+                <MaybeAuthRoute
+                  path="/maybe-custom"
+                  spinner={<MaybeCustomSpinner msg="XD" />}
+                >
+                  <Home />
+                </MaybeAuthRoute>
+                <MaybeAuthRoute
+                  path="/maybe-custom-component"
+                  spinnerComponent={MaybeCustomSpinner2}
+                >
+                  <Home />
+                </MaybeAuthRoute>
+                <AuthRoute path={'/auth'}>
+                  <Home />
+                </AuthRoute>
+                <AuthRoute path={'/auth-empty'} spinner={null}>
+                  <Home />
+                </AuthRoute>
+                <AuthRoute
+                  path={'/auth-custom'}
+                  spinner={<div data-testid={'spinner'}>AuthSpinny</div>}
+                >
+                  <Home />
+                </AuthRoute>
+                <AuthRoute
+                  path={'/auth-custom-component'}
+                  spinnerComponent={AuthSpinner}
+                >
+                  <Home />
+                </AuthRoute>
+              </Switch>
+            </MemoryRouter>
+          </AuthRoutesProvider>
+        </Auth>
+      )
+
+      const { getByTestId, queryAllByTestId } = render(<App />)
+
+      // Spinner on the page
+      expect(getByTestId('spinner').textContent).toEqual('Spinny')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-empty'))
+      })
+
+      // No spinner
+      expect(queryAllByTestId('spinner').length).toBe(0)
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-custom'))
+      })
+
+      // Custom Spinner on the page
+      expect(getByTestId('spinner').textContent).toEqual('CustomSpinny')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-custom-component'))
+      })
+
+      // Custom Spinner Component on the page
+      expect(getByTestId('spinner').textContent).toEqual(
+        'CustomSpinnyComponent'
+      )
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-maybe'))
+      })
+
+      // Spinner on the page
+      expect(getByTestId('spinner').textContent).toEqual('Spinny')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-maybe-empty'))
+      })
+
+      // No spinner
+      expect(queryAllByTestId('spinner').length).toBe(0)
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-maybe-custom'))
+      })
+
+      // Custom Spinner on the page
+      expect(getByTestId('spinner').textContent).toEqual('MaybeCustomSpinnerXD')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-maybe-custom-component'))
+      })
+
+      // Custom Spinner component on the page
+      expect(getByTestId('spinner').textContent).toEqual('MaybeCustomSpinner')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-auth'))
+      })
+
+      // Spinner on the page
+      expect(getByTestId('spinner').textContent).toEqual('Spinny')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-auth-empty'))
+      })
+
+      // No spinner
+      expect(queryAllByTestId('spinner').length).toBe(0)
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-auth-custom'))
+      })
+
+      // Custom Spinner on the page
+      expect(getByTestId('spinner').textContent).toEqual('AuthSpinny')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-auth-custom-component'))
+      })
+
+      // Custom Spinner component on the page
+      expect(getByTestId('spinner').textContent).toEqual('AuthSpinnerComponent')
     })
   })
 })
