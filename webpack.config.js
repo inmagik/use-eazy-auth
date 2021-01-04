@@ -15,7 +15,7 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.(t|j)sx?$/,
         exclude: /(node_modules)/,
         use: 'babel-loader'
       },
@@ -26,6 +26,7 @@ module.exports = {
     ]
   },
   resolve: {
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
     alias: {
       'use-eazy-auth': path.resolve(__dirname, 'src'),
     }
