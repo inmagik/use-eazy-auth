@@ -984,5 +984,76 @@ describe('AuthRoutes', () => {
       // Custom Spinner component on the page
       expect(getByTestId('spinner').textContent).toEqual('AuthSpinnerComponent')
     })
+
+    it('should configure auth redirects', async () => {
+      const loginCall = jest.fn()
+
+      const meCall = jest.fn()
+
+      // Fake stroage
+      const resolvesGetItem: TestCallBack[] = []
+      const localStorageMock = {
+        getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      }
+      Object.defineProperty(global, '_localStorage', {
+        value: localStorageMock,
+        writable: true,
+      })
+
+      const NavBar = () => (
+        <div>
+          <Link data-testid="link-to-custom-redirect" to="/custom-redirect">
+            CustomRedirect
+          </Link>
+        </div>
+      )
+
+      function CustomAnon() {
+        return (
+          <div data-testid='anon'>CustomAnon</div>
+        )
+      }
+
+      const App = () => (
+        <Auth loginCall={loginCall} meCall={meCall}>
+          <AuthRoutesProvider authRedirectTo="/anon">
+            <MemoryRouter initialEntries={['/home']} initialIndex={0}>
+              <NavBar />
+              <Switch>
+                <AuthRoute path="/home">
+                  <Home />
+                </AuthRoute>
+                <AuthRoute path="/custom-redirect" redirectTo='/custom-anon'>
+                  <Home />
+                </AuthRoute>
+                <Route path="/anon">
+                  <Anon />
+                </Route>
+                <GuestRoute path="/custom-anon">
+                  <CustomAnon />
+                </GuestRoute>
+              </Switch>
+            </MemoryRouter>
+          </AuthRoutesProvider>
+        </Auth>
+      )
+
+      const { getByTestId } = render(<App />)
+
+      // Empty local storage
+      await act(async () => {
+        resolvesGetItem[0](null)
+      })
+
+      expect(getByTestId('anon').textContent).toEqual('Anon')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-custom-redirect'))
+      })
+
+      expect(getByTestId('anon').textContent).toEqual('CustomAnon')
+    })
   })
 })
