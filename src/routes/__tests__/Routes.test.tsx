@@ -1192,7 +1192,7 @@ describe('AuthRoutes', () => {
                 </AuthRoute>
                 <AuthRoute redirectTest={null} path="/gengar">
                   <div>
-                    <div data-testid='home'>Gengar</div>
+                    <div data-testid="home">Gengar</div>
                     <Link data-testid="to-vulpix" to="/custom-redirect">
                       2 Vulpix
                     </Link>
@@ -1226,6 +1226,142 @@ describe('AuthRoutes', () => {
       })
 
       expect(getByTestId('home').textContent).toEqual('Vulpix')
+    })
+
+    it('should configure referrer', async () => {
+      const loginCall = jest
+        .fn<Promise<AuthTokens<number>>, [DummyLoginCredentials]>()
+        .mockResolvedValue({
+          accessToken: 99,
+        })
+
+      const meCall = jest.fn<Promise<DummyUser>, [number]>().mockResolvedValue({
+        username: 'Gio Va',
+      })
+
+      // Fake stroage
+      const resolvesGetItem: TestCallBack[] = []
+      const localStorageMock = {
+        getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      }
+      Object.defineProperty(global, '_localStorage', {
+        value: localStorageMock,
+        writable: true,
+      })
+
+      function Login() {
+        const { login } = useAuthActions<
+          number,
+          never,
+          DummyUser,
+          DummyLoginCredentials
+        >()
+
+        return (
+          <div>
+            <div data-testid="login">Login</div>
+            <button
+              onClick={() => {
+                // <3
+                login({
+                  username: 'trizero',
+                  password: 'trizero2077',
+                })
+              }}
+              data-testid="login-btn"
+            >
+              Log Me In
+            </button>
+          </div>
+        )
+      }
+
+      function NavBar() {
+        const { logout } = useAuthActions()
+        return (
+          <div>
+            <button onClick={logout} data-testid="logout-btn">
+              LogOut
+            </button>
+            <Link data-testid="link-to-remember" to="/remember-me">
+              Remember
+            </Link>
+          </div>
+        )
+      }
+
+      function FuckingHome({ msg = 'Home' }: { msg?: string }) {
+        return <div data-testid="home">{msg}</div>
+      }
+
+      const App = () => (
+        <Auth loginCall={loginCall} meCall={meCall}>
+          <AuthRoutesProvider
+            spinnerComponent={SpinnyBoy}
+            rememberReferrer={false}
+          >
+            <MemoryRouter
+              initialEntries={['/my-home-is-cool']}
+              initialIndex={0}
+            >
+              <NavBar />
+              <Switch>
+                <GuestRoute path="/login" component={Login} />
+                <AuthRoute path="/" exact>
+                  <FuckingHome />
+                </AuthRoute>
+                <AuthRoute path="/my-home-is-cool">
+                  <FuckingHome msg="CoolHome" />
+                </AuthRoute>
+                <AuthRoute rememberReferrer path="/remember-me">
+                  <FuckingHome msg="RememberHome" />
+                </AuthRoute>
+              </Switch>
+            </MemoryRouter>
+          </AuthRoutesProvider>
+        </Auth>
+      )
+
+      const { getByTestId, queryAllByTestId } = render(<App />)
+
+      // Spinner on the page
+      expect(getByTestId('spinner').textContent).toEqual('Spinny')
+
+      // Local storage
+      await act(async () => {
+        resolvesGetItem[0](null)
+      })
+
+      // No Spinny
+      expect(queryAllByTestId('spinner')).toEqual([])
+
+      expect(getByTestId('login').textContent).toEqual('Login')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('login-btn'))
+      })
+
+      // Show home
+      expect(getByTestId('home').textContent).toEqual('Home')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('logout-btn'))
+      })
+      // Back 2 login
+      expect(getByTestId('login').textContent).toEqual('Login')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-remember'))
+      })
+
+      expect(getByTestId('login').textContent).toEqual('Login')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('login-btn'))
+      })
+      expect(getByTestId('home').textContent).toEqual('RememberHome')
     })
   })
 })

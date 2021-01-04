@@ -105,6 +105,7 @@ export default function AuthRoute({
   redirectTo: localRedirectTo,
   spinner: localSpinner,
   spinnerComponent: localSpinnerComponent,
+  rememberReferrer: localRememberReferrer,
   ...rest
 }: AuthRouteProps) {
   const routesCtxConfig = useContext(AuthRoutesContext)
@@ -113,6 +114,8 @@ export default function AuthRoute({
   const spinnerComponent =
     localSpinnerComponent ?? routesCtxConfig.spinnerComponent
   const redirectTo = localRedirectTo ?? routesCtxConfig.authRedirectTo
+  const rememberReferrer =
+    localRememberReferrer ?? routesCtxConfig.rememberReferrer
   const redirectTest =
     localRedirectTest === undefined
       ? routesCtxConfig.authRedirectTest
@@ -143,6 +146,7 @@ export default function AuthRoute({
       redirectTo={redirectTo}
       spinner={spinner}
       spinnerComponent={spinnerComponent}
+      rememberReferrer={rememberReferrer}
       {...rest}
     />
   )
