@@ -2,5 +2,6 @@
   "name": "use-eazy-auth/routes",
   "private": true,
   "main": "../lib/routes.cjs.js",
-  "module": "../lib/routes.es.js"
+  "module": "../lib/routes.es.js",
+  "types": "../lib/routes/index.d.ts"
 }
