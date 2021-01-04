@@ -1,3 +1,62 @@
+## 2.0.0
+##### *January 1th, 2021*
+
+Types for `use-eazy-auth` :tada: !
+Now `use-eazy-auth` is 100% typescript!
+
+### :bangbang: Breaking changes
+
+All Routes `use-eazy-auth/routes` now has two different props to configure spinners.
+The `spinner` prop a `ReactNode` and a `spinnerComponent` prop a `ComponentType`.
+
+```jsx
+<AuthRoute path='/' exact spinner={<Spinner />}>
+  <Dashboard />
+</AuthRoute>
+<GuestRoute path='/login' exact spinnerComponent={Spinner}>
+  <Login />
+</GuestRoute>
+```
+
+### :zap: New features
+
+The `updateUser` function from `useAuthActions` can now acept a callback to
+execute a functional update similar to React `useState`.
+
+```js
+const { updateUser } = useAuthActions()
+
+updateUser(user => ({ ...user, age: user.age + 1 }))
+```
+
+A new component `AuthRoutesProvider` is available from `use-eazy-auth/routes`,
+to configure common part of routes behaviours.
+All options can be overridden locally.
+
+Props availables:
+```ts
+interface AuthRoutesConfig<U = any> {
+  guestRedirectTo?: string | Location<Dictionary>
+  authRedirectTo?: string | Location<Dictionary>
+  authRedirectTest?: (user: U) => string | null | undefined | Location
+  spinner?: ReactNode
+  spinnerComponent?: ComponentType
+  rememberReferrer?: boolean
+  redirectToReferrer?: boolean
+}
+```
+
+```js
+// All with the same spinner
+<AuthRoutesProvider spinner={<Spinner />}>
+  {/* ... */}
+  {/* <CustomSpinner /> wins and so on... */}
+  <AuthRoute path='/' exact spinner={<CustomSpinner />}>
+    <Dashboard />
+  </AuthRoute>
+</AuthRoutesProvider>
+```
+
 ## 1.4.0
 ##### *November 24th, 2020*
 
