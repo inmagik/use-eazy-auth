@@ -89,7 +89,7 @@ const RedirectAuthRoute = React.memo(
 )
 
 export type AuthRouteProps<U = any> = {
-  redirectTest?: (user: U) => string | null | undefined | Location
+  redirectTest?: null | ((user: U) => string | null | undefined | Location)
   redirectTo?: string | Location
   spinner?: ReactNode
   spinnerComponent?: ComponentType
@@ -113,7 +113,10 @@ export default function AuthRoute({
   const spinnerComponent =
     localSpinnerComponent ?? routesCtxConfig.spinnerComponent
   const redirectTo = localRedirectTo ?? routesCtxConfig.authRedirectTo
-  const redirectTest = localRedirectTest ?? routesCtxConfig.authRedirectTest
+  const redirectTest =
+    localRedirectTest === undefined
+      ? routesCtxConfig.authRedirectTest
+      : localRedirectTest
 
   const { authenticated, bootstrappedAuth, loginLoading } = useAuthState()
   const { user } = useAuthUser()

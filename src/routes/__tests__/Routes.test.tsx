@@ -1144,5 +1144,88 @@ describe('AuthRoutes', () => {
 
       expect(getByTestId('home').textContent).toEqual('CustomHome')
     })
+
+    it('should configure redirect based un test function', async () => {
+      const loginCall = jest.fn()
+
+      let resolveMe: TestCallBack<DummyUser>
+      const meCall = jest.fn(
+        () =>
+          new Promise<DummyUser>((resolve) => {
+            resolveMe = resolve
+          })
+      )
+
+      // Fake stroage
+      const resolvesGetItem: TestCallBack[] = []
+      const localStorageMock = {
+        getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      }
+      Object.defineProperty(global, '_localStorage', {
+        value: localStorageMock,
+        writable: true,
+      })
+
+      function Gengar() {
+        return <div data-testid="home">Gengar</div>
+      }
+
+      const App = () => (
+        <Auth loginCall={loginCall} meCall={meCall}>
+          <AuthRoutesProvider
+            authRedirectTest={(user) =>
+              user.username === 'GenGar' ? '/gengar' : null
+            }
+          >
+            <MemoryRouter initialEntries={['/home']} initialIndex={0}>
+              <Switch>
+                <Route path="/vulpix">
+                  <div data-testid="home">Vulpix</div>
+                </Route>
+                <AuthRoute
+                  redirectTest={(user) => '/vulpix'}
+                  path="/custom-redirect"
+                >
+                  <Gengar />
+                </AuthRoute>
+                <AuthRoute redirectTest={null} path="/gengar">
+                  <div>
+                    <div data-testid='home'>Gengar</div>
+                    <Link data-testid="to-vulpix" to="/custom-redirect">
+                      2 Vulpix
+                    </Link>
+                  </div>
+                </AuthRoute>
+                <AuthRoute path={'/home'}>
+                  <Home />
+                </AuthRoute>
+              </Switch>
+            </MemoryRouter>
+          </AuthRoutesProvider>
+        </Auth>
+      )
+
+      const { getByTestId } = render(<App />)
+
+      // Local storage
+      await act(async () => {
+        resolvesGetItem[0](JSON.stringify({ accessToken: 23 }))
+      })
+
+      // Me Call
+      await act(async () => {
+        resolveMe({ username: 'GenGar' })
+      })
+
+      expect(getByTestId('home').textContent).toEqual('Gengar')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('to-vulpix'))
+      })
+
+      expect(getByTestId('home').textContent).toEqual('Vulpix')
+    })
   })
 })
