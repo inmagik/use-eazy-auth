@@ -1011,9 +1011,7 @@ describe('AuthRoutes', () => {
       )
 
       function CustomAnon() {
-        return (
-          <div data-testid='anon'>CustomAnon</div>
-        )
+        return <div data-testid="anon">CustomAnon</div>
       }
 
       const App = () => (
@@ -1025,7 +1023,7 @@ describe('AuthRoutes', () => {
                 <AuthRoute path="/home">
                   <Home />
                 </AuthRoute>
-                <AuthRoute path="/custom-redirect" redirectTo='/custom-anon'>
+                <AuthRoute path="/custom-redirect" redirectTo="/custom-anon">
                   <Home />
                 </AuthRoute>
                 <Route path="/anon">
@@ -1054,6 +1052,97 @@ describe('AuthRoutes', () => {
       })
 
       expect(getByTestId('anon').textContent).toEqual('CustomAnon')
+    })
+
+    it('should configure guest redirects', async () => {
+      const loginCall = jest.fn()
+
+      const meCall = jest
+        .fn<Promise<DummyUser>, [number]>()
+        .mockResolvedValue({ username: 'Gio Va' })
+
+      // Fake stroage
+      const resolvesGetItem: TestCallBack[] = []
+      const localStorageMock = {
+        getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+      }
+      Object.defineProperty(global, '_localStorage', {
+        value: localStorageMock,
+        writable: true,
+      })
+
+      const NavBar = () => (
+        <div>
+          <Link data-testid="link-to-guest" to="/guest">
+            Guest
+          </Link>
+          <Link data-testid="link-to-custom-guest" to="/custom-guest">
+            Custom Guest
+          </Link>
+        </div>
+      )
+
+      function WelcomeHome() {
+        return <div data-testid="home">WelcomeHome</div>
+      }
+
+      function CustomHome() {
+        return <div data-testid="home">CustomHome</div>
+      }
+
+      const App = () => (
+        <Auth loginCall={loginCall} meCall={meCall}>
+          <AuthRoutesProvider guestRedirectTo="/welcome-home">
+            <MemoryRouter initialEntries={['/home']} initialIndex={0}>
+              <NavBar />
+              <Switch>
+                <AuthRoute path="/home">
+                  <Home />
+                </AuthRoute>
+                <AuthRoute path="/welcome-home">
+                  <WelcomeHome />
+                </AuthRoute>
+                <AuthRoute path="/custom-home">
+                  <CustomHome />
+                </AuthRoute>
+                <GuestRoute path="/guest">
+                  <Anon />
+                </GuestRoute>
+                <GuestRoute path="/custom-guest" redirectTo="/custom-home">
+                  <Anon />
+                </GuestRoute>
+              </Switch>
+            </MemoryRouter>
+          </AuthRoutesProvider>
+        </Auth>
+      )
+
+      const { getByTestId } = render(<App />)
+
+      // Empty local storage
+      await act(async () => {
+        resolvesGetItem[0](JSON.stringify({ accessToken: 23 }))
+      })
+
+      expect(meCall).toHaveBeenCalled()
+
+      // Show ma home
+      expect(getByTestId('home').textContent).toEqual('Home')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-guest'))
+      })
+
+      // Show welcome home
+      expect(getByTestId('home').textContent).toEqual('WelcomeHome')
+
+      await act(async () => {
+        fireEvent.click(getByTestId('link-to-custom-guest'))
+      })
+
+      expect(getByTestId('home').textContent).toEqual('CustomHome')
     })
   })
 })
