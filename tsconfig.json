@@ -24,6 +24,7 @@
     "baseUrl": ".",
     "paths": {
       "use-eazy-auth": ["./src/index"],
+      "use-eazy-auth/routes": ["./src/routes/index"],
     }
   },
   "include": ["src/**/*", "example/**/*"],
