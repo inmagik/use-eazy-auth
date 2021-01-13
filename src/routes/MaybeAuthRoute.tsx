@@ -9,8 +9,8 @@ export type MaybeAuthRouteProps = {
 } & RouteProps
 
 /**
- * Wait for auth loading before rendering route component
- * (needed for first time local storage auth...)
+ * Wrapper around `<Route />`, render given spinner or null while auth is loading
+ * then render given content for both guest and authenticated user.
  *
  */
 export default function MaybeAuthRoute({

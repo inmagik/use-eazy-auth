@@ -97,7 +97,8 @@ export type AuthRouteProps<U = any> = {
 } & RouteProps
 
 /**
- * Ensure user logged otherwise redirect them to login
+ * Wrapper around `<Route />`, render given spinner or null while auth is loading
+ * then ensure authenticated user otherwise render a `<Redirect />`.
  *
  */
 export default function AuthRoute({

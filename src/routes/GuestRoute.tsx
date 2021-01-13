@@ -18,7 +18,8 @@ export type GuestRouteProps = {
 } & RouteProps
 
 /**
- * Redirect to home when user logged in
+ * Wrapper around `<Route />`, render given spinner or null while auth is loading
+ * then ensure guest (not authenticated) user otherwise render a `<Redirect />`.
  *
  */
 export default function GuestRoute({
