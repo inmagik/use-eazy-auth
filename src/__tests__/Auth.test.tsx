@@ -1,7 +1,8 @@
 import React from 'react'
 import { renderHook, act } from '@testing-library/react-hooks'
 import { ReactNode } from 'react'
-import Auth, { useAuthActions, useAuthUser } from '../index'
+import Auth, { useAuthActions, useAuthUser, useAuthState } from '../index'
+import { InitialAuthData } from '../types'
 
 interface TestCallBack<V = any> {
   (value: V): void
@@ -346,5 +347,151 @@ describe('Auth', () => {
       user: { username: 'Giova', age: 99 },
       token: 23,
     })
+  })
+
+  it('should init unauthenticated state using initialData prop', async () => {
+    const loginCall = jest.fn()
+    const meCall = jest.fn()
+
+    const localStorageMock = {
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const AuthWrapper = ({
+      children,
+      initialData,
+    }: {
+      children?: ReactNode
+      initialData: InitialAuthData
+    }) => (
+      <Auth loginCall={loginCall} meCall={meCall} initialData={initialData}>
+        {children}
+      </Auth>
+    )
+
+    function useAllAuth() {
+      return {
+        actions: useAuthActions(),
+        user: useAuthUser(),
+        state: useAuthState(),
+      }
+    }
+
+    const { result } = renderHook(() => useAllAuth(), {
+      wrapper: AuthWrapper,
+      initialProps: {
+        initialData: {
+          user: null,
+          accessToken: null,
+        },
+      },
+    })
+
+    expect(window.localStorage.getItem).not.toHaveBeenCalled()
+    expect(window.localStorage.setItem).not.toHaveBeenCalled()
+    expect(meCall).not.toHaveBeenCalled()
+
+    expect(result.current.user).toEqual({
+      token: null,
+      user: null,
+    })
+    expect(result.current.state).toEqual({
+      bootstrappedAuth: true,
+      authenticated: false,
+      loginLoading: false,
+      loginError: null,
+    })
+
+    const fakeApi = jest.fn((t) => () => Promise.resolve(88))
+
+    await act(async () => {
+      await result.current.actions.callAuthApiPromise(fakeApi)
+    })
+
+    // null token 4 ma caller
+    expect(fakeApi).toHaveBeenCalledWith(null)
+  })
+
+  it('should init authenticated state using initialData prop', async () => {
+    const loginCall = jest.fn()
+    const meCall = jest.fn()
+
+    const localStorageMock = {
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const AuthWrapper = ({
+      children,
+      initialData,
+    }: {
+      children?: ReactNode
+      initialData: InitialAuthData
+    }) => (
+      <Auth loginCall={loginCall} meCall={meCall} initialData={initialData}>
+        {children}
+      </Auth>
+    )
+
+    function useAllAuth() {
+      return {
+        actions: useAuthActions(),
+        user: useAuthUser(),
+        state: useAuthState(),
+      }
+    }
+
+    const { result } = renderHook(() => useAllAuth(), {
+      wrapper: AuthWrapper,
+      initialProps: {
+        initialData: {
+          user: {
+            id: 23,
+            username: '@giova',
+            name: 'Giova',
+          },
+          accessToken: 'z3cr3t',
+        },
+      },
+    })
+
+    expect(window.localStorage.getItem).not.toHaveBeenCalled()
+    expect(window.localStorage.setItem).not.toHaveBeenCalled()
+    expect(meCall).not.toHaveBeenCalled()
+
+    expect(result.current.user).toEqual({
+      token: 'z3cr3t',
+      user: {
+        id: 23,
+        username: '@giova',
+        name: 'Giova',
+      },
+    })
+    expect(result.current.state).toEqual({
+      bootstrappedAuth: true,
+      authenticated: true,
+      loginLoading: false,
+      loginError: null,
+    })
+
+    const fakeApi = jest.fn((t) => () => Promise.resolve(88))
+
+    await act(async () => {
+      await result.current.actions.callAuthApiPromise(fakeApi)
+    })
+
+    // null token 4 ma caller
+    expect(fakeApi).toHaveBeenCalledWith('z3cr3t')
   })
 })

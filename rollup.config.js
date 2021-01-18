@@ -28,6 +28,7 @@ export default ['esm', 'cjs'].map((format) => ({
     {
       dir: 'lib',
       entryFileNames: '[name].[format].js',
+      chunkFileNames: '[name].[format].js',
       exports: 'named',
       format,
     },

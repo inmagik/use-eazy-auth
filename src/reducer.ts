@@ -28,6 +28,7 @@ import {
   AuthActions,
   FunctionalUpdaterUser,
 } from './actionTypes'
+import { InitialAuthData } from './types'
 
 export interface AuthStateShape<A = any, R = any, U = any> {
   // Is auth initialized?
@@ -44,7 +45,7 @@ export interface AuthStateShape<A = any, R = any, U = any> {
   loginError: any
 }
 
-export const initialState: AuthStateShape = {
+const initialState: AuthStateShape = {
   // Is auth initialized?
   bootstrappingAuth: false,
   bootstrappedAuth: false,
@@ -57,6 +58,30 @@ export const initialState: AuthStateShape = {
   // Login state
   loginLoading: false,
   loginError: null,
+}
+
+export function initAuthState<A, R, U>(
+  initialData: InitialAuthData<A, R, U> | undefined
+): AuthStateShape<A, R, U> {
+  if (initialData) {
+    // Only fill user and access token together
+    if (initialData.user && initialData.accessToken) {
+      return {
+        ...initialState,
+        bootstrappedAuth: true,
+        user: initialData.user,
+        accessToken: initialData.accessToken,
+        refreshToken: initialData.refreshToken ?? null,
+        expires: initialData.expires ?? null,
+      }
+    } else {
+      return {
+        ...initialState,
+        bootstrappedAuth: true,
+      }
+    }
+  }
+  return initialState
 }
 
 export default function authReducer<A = any, R = any, U = any>(

@@ -64,6 +64,35 @@ function makeCallWithRefresh<A = any, R = any>(
   }
 }
 
+export function getBootAuthObservable<A, R>(
+  meCall: MeCall<A>,
+  refreshTokenCall: RefreshTokenCall<A, R> | undefined,
+  storage: AuthStorage<A, R>
+) {
+  return from(storage.getTokens()).pipe(
+    mergeMap((tokensInStorage) => {
+      // Prepare the ~ M A G I K ~ Api call with refresh
+      const callWithRefresh = makeCallWithRefresh(
+        tokensInStorage.accessToken,
+        tokensInStorage.refreshToken,
+        refreshTokenCall
+      )
+
+      return callWithRefresh(meCall).pipe(
+        catchError((err) => {
+          // Clear bad tokens from storage
+          storage.removeTokens()
+          return throwError(err)
+        }),
+        map((responseWithRefresh) => ({
+          tokensInStorage,
+          responseWithRefresh,
+        }))
+      )
+    })
+  )
+}
+
 // Boot eazy-auth
 // Read tokens from provided storage
 // if any try to use theese to authenticate the user \w the given meCall
@@ -77,6 +106,11 @@ export function bootAuth<A = any, R = any>(
   tokenRef: MutableRefObject<AuthTokens<A, R> | null>,
   bootRef: MutableRefObject<boolean>
 ) {
+  // My Auth Alredy Booted
+  if (bootRef.current) {
+    return () => {}
+  }
+
   // Shortcut to finish boot process default not authenticated
   function endBoot(payload: EndBootPayload = { authenticated: false }) {
     bootRef.current = true
@@ -88,47 +122,28 @@ export function bootAuth<A = any, R = any>(
 
   dispatch({ type: BOOTSTRAP_AUTH_START })
 
-  const subscription = from(storage.getTokens())
-    .pipe(
-      mergeMap((tokensInStorage) => {
-        // Prepare the ~ M A G I K ~ Api call with refresh
-        const callWithRefresh = makeCallWithRefresh(
-          tokensInStorage.accessToken,
-          tokensInStorage.refreshToken,
-          refreshTokenCall
-        )
-
-        return callWithRefresh(meCall).pipe(
-          catchError((err) => {
-            // Clear bad tokens from storage
-            storage.removeTokens()
-            return throwError(err)
-          }),
-          map((responseWithRefresh) => ({
-            tokensInStorage,
-            responseWithRefresh,
-          }))
-        )
-      })
-    )
-    .subscribe(({ tokensInStorage, responseWithRefresh }) => {
-      const { response: user, refreshedTokens } = responseWithRefresh
-      // If token refreshed take the token refreshed as valid otherwise use the good
-      // old tokens from local storage
-      const validTokens = refreshedTokens ? refreshedTokens : tokensInStorage
-      // GANG saved the valid tokens to the current ref!
-      tokenRef.current = validTokens
-      // Tell to ma reducer
-      endBoot({
-        authenticated: true,
-        user,
-        ...validTokens,
-      })
-      // // Plus only if refreshed save freshed in local storage!
-      if (refreshedTokens) {
-        storage.setTokens(refreshedTokens)
-      }
-    }, endBoot)
+  const subscription = getBootAuthObservable(
+    meCall,
+    refreshTokenCall,
+    storage
+  ).subscribe(({ tokensInStorage, responseWithRefresh }) => {
+    const { response: user, refreshedTokens } = responseWithRefresh
+    // If token refreshed take the token refreshed as valid otherwise use the good
+    // old tokens from local storage
+    const validTokens = refreshedTokens ? refreshedTokens : tokensInStorage
+    // GANG saved the valid tokens to the current ref!
+    tokenRef.current = validTokens
+    // Tell to ma reducer
+    endBoot({
+      authenticated: true,
+      user,
+      ...validTokens,
+    })
+    // Plus only if refreshed save freshed in local storage!
+    if (refreshedTokens) {
+      storage.setTokens(refreshedTokens)
+    }
+  }, endBoot)
 
   return () => subscription.unsubscribe()
 }

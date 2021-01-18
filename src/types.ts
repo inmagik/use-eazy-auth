@@ -6,6 +6,13 @@ export interface AuthTokens<A = any, R = any> {
   expires?: number | null // Optional expires time in seconds
 }
 
+export interface InitialAuthData<A = any, R = any, U = any>  {
+  accessToken: A | null
+  refreshToken?: R | null
+  expires?: number | null
+  user: U | null
+}
+
 export type RefreshTokenCall<A = any, R = any> = (
   refreshToken: R
 ) => Promise<AuthTokens<A, R>> | Observable<AuthTokens<A, R>>

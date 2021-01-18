@@ -14,7 +14,7 @@ import useConstant from './useConstant'
 import { bootAuth, makePerformLogin } from './authEffects'
 import makeCallApiRx from './callApiRx'
 // Reducer stuff
-import authReducer, { AuthStateShape, initialState } from './reducer'
+import authReducer, { AuthStateShape, initAuthState } from './reducer'
 import bindActionCreators from './bindActionCreators'
 import * as actionCreators from './actionCreators'
 import {
@@ -25,6 +25,7 @@ import {
 } from './actionTypes'
 import {
   AuthTokens,
+  InitialAuthData,
   CurryAuthApiFn,
   CurryAuthApiFnPromise,
   LoginCall,
@@ -85,6 +86,7 @@ interface AuthProps<A = any, R = any, U = any, C = any> {
   refreshTokenCall?: RefreshTokenCall<A, R>
   storageBackend?: StorageBackend | false
   storageNamespace?: string
+  initialData?: InitialAuthData<A, R, U>
 }
 
 export default function Auth<A = any, R = any, U = any, C = any>({
@@ -95,10 +97,12 @@ export default function Auth<A = any, R = any, U = any, C = any>({
   refreshTokenCall,
   storageBackend,
   storageNamespace = 'auth',
+  initialData,
 }: AuthProps<A, R, U, C>) {
   const [state, originalDispatch] = useReducer<
-    Reducer<AuthStateShape<A, R, U>, AuthActions>
-  >(authReducer, initialState)
+    Reducer<AuthStateShape<A, R, U>, AuthActions>,
+    InitialAuthData<A, R, U> | undefined
+  >(authReducer, initialData, initAuthState)
 
   const [actionObservable, dispatch] = useConstant(() => {
     const actionSubject = new Subject<AuthActions>()
@@ -114,7 +118,14 @@ export default function Auth<A = any, R = any, U = any, C = any>({
     [storageBackend, storageNamespace]
   )
 
-  const { bootstrappedAuth, accessToken, loginLoading, loginError } = state
+  const {
+    bootstrappedAuth,
+    accessToken,
+    refreshToken,
+    expires,
+    loginLoading,
+    loginError,
+  } = state
 
   // TODO: Check better strategy and future trouble \w async react
   // This trick is done because token can change over time Es:. the token was refresh
@@ -127,14 +138,21 @@ export default function Auth<A = any, R = any, U = any, C = any>({
   // for your rendering is only a detail implementation of how your
   // server rember who you are ... So if a token change isn't important for
   // rendering but is important for the (*future*) for side effects
-  const tokenRef = useRef<AuthTokens<A, R> | null>(null)
+  const tokenRef = useRef<AuthTokens<A, R> | null>(
+    accessToken
+      ? refreshToken
+        ? // TODO: Write better types about refresh token .... maybe make it nullable
+          { accessToken, refreshToken, expires }
+        : { accessToken, expires }
+      : null
+  )
 
   // Is authenticated when has an access token eazy
   // This line can't look stupid but is very very important
   const authenticated = !!accessToken
 
   // Handle the ref of booting status of eazy auth
-  const bootRef = useRef(false)
+  const bootRef = useRef(bootstrappedAuth)
 
   // Boot Eazy Auth
   // NOTE: Fuck off this subtle change the old bheaviur
