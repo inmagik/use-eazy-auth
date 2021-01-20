@@ -349,6 +349,99 @@ describe('Auth', () => {
     })
   })
 
+  it('Should not call refreshCall when no refreshToken', async () => {
+    interface AgedUser {
+      username: string
+      age: number
+    }
+
+    // Fake da calls
+    const loginCall = jest.fn()
+    // Hack for manual resolve the me promise
+    let resolveMe: TestCallBack<AgedUser>
+    const meCall = jest.fn(
+      () =>
+        new Promise<AgedUser>((resolve) => {
+          resolveMe = resolve
+        })
+    )
+
+    const refreshToken = jest.fn()
+
+    // Fake a good storage
+    const resolvesGetItem: TestCallBack[] = []
+    const localStorageMock = {
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const AuthWrapper = ({ children }: { children: ReactNode }) => (
+      <Auth loginCall={loginCall} meCall={meCall} refreshTokenCall={refreshToken}>
+        {children}
+      </Auth>
+    )
+
+    function useAllAuth() {
+      return {
+        user: useAuthUser<AgedUser, number>(),
+        state: useAuthState(),
+        actions: useAuthActions<number, never, AgedUser>(),
+      }
+    }
+
+    const { result } = renderHook(() => useAllAuth(), {
+      wrapper: AuthWrapper,
+    })
+
+    await act(async () => {
+      resolvesGetItem[0](JSON.stringify({ accessToken: 23 }))
+    })
+
+    await act(async () => {
+      resolveMe({ username: 'Giova', age: 23 })
+    })
+
+    expect(result.current.user).toEqual({
+      user: { username: 'Giova', age: 23 },
+      token: 23,
+    })
+
+    expect(result.current.state).toEqual({
+      bootstrappedAuth: true,
+      authenticated: true,
+      loginLoading: false,
+      loginError: null,
+    })
+
+    const apiFn = jest.fn((token: any) => () => Promise.reject({
+      status: 401,
+    }))
+
+    await act(async () => {
+      result.current.actions.callAuthApiPromise(apiFn)
+    })
+    await act(async () => {
+      await apiFn.mock.results[0].value
+    })
+    expect(apiFn).toHaveBeenLastCalledWith(23)
+    expect(refreshToken).not.toHaveBeenCalled()
+    expect(result.current.user).toEqual({
+      user: null,
+      token: null,
+    })
+    expect(result.current.state).toEqual({
+      bootstrappedAuth: true,
+      authenticated: false,
+      loginLoading: false,
+      loginError: null,
+    })
+  })
+
   it('should init unauthenticated state using initialData prop', async () => {
     const loginCall = jest.fn()
     const meCall = jest.fn()

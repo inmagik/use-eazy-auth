@@ -74,16 +74,18 @@ export default function makeCallApiRx<A, R>(
   )
 
   // Subject for emit refresh tasks
-  const refreshEmitter = new Subject()
+  const refreshEmitter = new Subject<R | null>()
 
   // An Observable that perform the refresh token call
   // until logout was dispatched and emit actions
   const refreshRoutine = refreshEmitter.asObservable().pipe(
-    exhaustMap((refreshToken: any) => {
+    exhaustMap((refreshToken) => {
       return concat(
         of(tokenRefreshing()),
         from(
-          refreshTokenCall ? refreshTokenCall(refreshToken) : throwError(null)
+          refreshTokenCall && refreshToken
+            ? refreshTokenCall(refreshToken)
+            : throwError(null)
         ).pipe(
           map((refreshResponse) =>
             tokenRefreshed({
@@ -92,7 +94,7 @@ export default function makeCallApiRx<A, R>(
               expires: refreshResponse.expires,
             })
           ),
-          catchError((error) => of({ type: LOGOUT })),
+          catchError(() => of({ type: LOGOUT })),
           takeUntil(logoutObservable)
         )
       )
