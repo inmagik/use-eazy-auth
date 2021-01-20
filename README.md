@@ -283,6 +283,40 @@ const Home = () => {
 }
 ```
 
+## Provide initial data
+
+In certain scenarios (Server Side Rendering), you need to provide initial data to your `<Auth />` and avoid
+all the side effects appening during first renders (check tokens, perform `meCall` ecc).
+
+You can do that using the `initialData` prop:
+
+```jsx
+const App = () => (
+  <Auth
+    initialData={{
+      user: { id: 23, name: 'Gio Va' },
+      accessToken: 'secret',
+      refreshToken: 'refreshToken'
+    }}
+  >
+    {/* ... */}
+  </Auth>
+)
+```
+
+When both `user` and `token` are not null the initial state is **authenticated** otherwise no.
+
+The `initialData` typing is:
+
+```ts
+interface InitialAuthData<A = any, R = any, U = any>  {
+  accessToken: A | null
+  refreshToken?: R | null
+  expires?: number | null
+  user: U | null
+}
+```
+
 ## React Router Integration
 This library ships with components useful to integrate routing (by react-router) and authentication. You are not forced to do this: you can use any routing library you wish and write the integration yourself, maybe taking our react-router integration as an example
 
