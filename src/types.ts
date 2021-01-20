@@ -2,7 +2,7 @@ import { Observable } from "rxjs"
 
 export interface AuthTokens<A = any, R = any> {
   accessToken: A
-  refreshToken?: R
+  refreshToken?: R | null
   expires?: number | null // Optional expires time in seconds
 }
 

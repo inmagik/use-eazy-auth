@@ -139,12 +139,7 @@ export default function Auth<A = any, R = any, U = any, C = any>({
   // server rember who you are ... So if a token change isn't important for
   // rendering but is important for the (*future*) for side effects
   const tokenRef = useRef<AuthTokens<A, R> | null>(
-    accessToken
-      ? refreshToken
-        ? // TODO: Write better types about refresh token .... maybe make it nullable
-          { accessToken, refreshToken, expires }
-        : { accessToken, expires }
-      : null
+    accessToken ? { accessToken, refreshToken, expires } : null
   )
 
   // Is authenticated when has an access token eazy

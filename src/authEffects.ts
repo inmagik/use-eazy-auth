@@ -15,9 +15,9 @@ import { AuthTokens, LoginCall, MeCall, RefreshTokenCall } from './types'
 
 export type ApiFn<T = any, O = any> = (token: T) => Promise<O> | Observable<O>
 
-function makeCallWithRefresh<A = any, R = any>(
+function makeCallWithRefresh<A, R>(
   accessToken: A,
-  refreshToken?: R,
+  refreshToken?: R | null,
   refreshTokenCall?: RefreshTokenCall<A, R>
 ) {
   return (
