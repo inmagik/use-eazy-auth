@@ -296,7 +296,7 @@ const App = () => (
     initialData={{
       user: { id: 23, name: 'Gio Va' },
       accessToken: 'secret',
-      refreshToken: 'refreshToken'
+      refreshToken: 'refreshSecret'
     }}
   >
     {/* ... */}
