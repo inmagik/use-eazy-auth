@@ -291,36 +291,67 @@ The integration is done by providing three specialized `Route` components: `Gues
 You can import those components from `use-eazy-auth/routes`
 
 ### `<GuestRoute />` component
+When the auth is booting render an optional spinner, when the user is  authenticated render a `<Redirect />`
+otherwise act as a normal `<Route />`.
+
 The `<GuestRoute />` component accepts the following props
 
-* **children**: the react element to render if user is not authenticated
-* **component**: the component to render if user is not authenticated
-* **render**: the function to render if user is not authenticated
 * **redirectTo**: the path to redirect authenticated users to
 * **redirectToReferrer**: if set to `true`, users that are redirected to this page from an `<AuthRoute />` because they are not authenticated will be redirected back after login instead of being redirected to the path set by `redirectTo`. Note that it is mandatory to set the `redirectTo` property as unauthenticated users may land directly on a `GuestRoute` and so they may not have a referrer
-* **spinner**: an optional spinner component to render while the login call is pending instead of `component`
+* **spinnerComponent**: an optional spinner component to render instead of content until the auth initialization is not complete
+* **spinner**: an optional spinner react element to render instead of content until the auth initialization is not complete
 * any other property accepted by `<Route />`
 
+
+```ts
+type GuestRouteProps = {
+  redirectTo?: string | Location<Dictionary>
+  redirectToReferrer?: boolean
+  spinner?: ReactNode
+  spinnerComponent?: ComponentType
+} & RouteProps
+```
+
 ### `<AuthRoute />` component
+When the auth is booting render an optional spinner, when the user is authenticated act as `<Route />`
+otherwise act as a normal `<Route />`.
+
+Can also redirect your user by a given `redirectTest`.
+
 The `<AuthRoute />` component accepts the following props
 
-* **children**: the react element to render if user is authenticated
-* **component**: the component to render if user is authenticated
-* **render**: the function to render if user is authenticated
 * **redirectTo**: the path to redirect a non authenticated user to
 * **rememberReferrer**: whether to enable the referrer in order to redirect the user back after login
 * **redirectTest**: a function to test if current authenticated user can access your route, take user as only parameter and if falsy is returned the user can acccess the route, otherwise the return value is expected to be a valid path used to redirect the user.
-* **spinner**: an optional spinner to render instead of `component` until the auth initialization is not complete
+* **spinnerComponent**: an optional spinner component to render instead of content until the auth initialization is not complete
+* **spinner**: an optional spinner react element to render instead of content until the auth initialization is not complete
 * any other property accepted by `<Route />`
+
+```ts
+type AuthRouteProps<U = any> = {
+  redirectTest?: null | ((user: U) => string | null | undefined | Location)
+  redirectTo?: string | Location
+  spinner?: ReactNode
+  spinnerComponent?: ComponentType
+  rememberReferrer?: boolean
+} & RouteProps
+```
 
 ### `<MaybeAuthRoute />` component
-The `<AuthRoute />` component accepts the following props
+When the auth is booting render an optional spinner otherwise act as `<Route />`.
 
-* **children**: the react element to render
-* **component**: the component to render
-* **render**: the function to render
-* **spinner**: an optional spinner to render instead of `component` until the auth initialization is not complete
+The `<MaybeAuthRoute />` component accepts the following props
+
+* **spinnerComponent**: an optional spinner component to render instead of content until the auth initialization is not complete
+* **spinner**: an optional spinner react element to render instead of content until the auth initialization is not complete
 * any other property accepted by `<Route />`
+
+```ts
+export type MaybeAuthRouteProps = {
+  spinner?: ReactNode
+  spinnerComponent?: ComponentType
+} & RouteProps
+```
 
 ## Run example
 This repository contains a runnable basic example of the main functionalities of the library
