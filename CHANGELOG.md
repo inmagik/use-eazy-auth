@@ -1,3 +1,20 @@
+## 2.1.0
+##### *January 20th, 2021*
+
+Add `initialData` prop to `<Auth />`.
+Useful in SSR scenario when you need to init auth state and avoid running initial side effects.
+
+The `initialData` typing:
+
+```ts
+interface InitialAuthData<A = any, R = any, U = any>  {
+  accessToken: A | null
+  refreshToken?: R | null
+  expires?: number | null
+  user: U | null
+}
+```
+
 ## 2.0.0
 ##### *January 1th, 2021*
 
