@@ -1,3 +1,9 @@
+## 2.2.0
+##### *February 1th, 2021*
+
+Added optional `onLogout` callback to `<Auth />`, inoked when user explicit logout
+(calling `logout` action) or is kicked out from `401` rejection in call api functions.
+
 ## 2.1.0
 ##### *January 20th, 2021*
 

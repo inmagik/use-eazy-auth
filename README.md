@@ -71,6 +71,9 @@ The following properties are required:
 
 * **storageNamespace**: in case you did not opt-out token storage, you can customize the key under which the tokens are stored by setting this property (it must be a string). If you don't set this property, it defaults to the string `auth`
 
+* **onLogout**: An optional callback inoked when user explicit logout
+(calling `logout` action) or is kicked out from `401` rejection in call api functions.
+
 Here is a usage example
 
 > Please note that the login call and the me call are **not** real life examples: always validate your users against your authentication backend!
@@ -385,6 +388,121 @@ export type MaybeAuthRouteProps = {
   spinner?: ReactNode
   spinnerComponent?: ComponentType
 } & RouteProps
+```
+
+# Fetching libraries integrations
+
+### [SWR](https://github.com/vercel/swr)
+
+```jsx
+import useSWR, { SWRConfig } from 'swr'
+import { useAuthActions } from 'use-eazy-auth'
+import { meCall, refreshTokenCall, loginCall } from './authCalls'
+
+function Dashboard() {
+  const { data: todos } = useSWR('/api/todos')
+  // ...
+}
+
+function ConfigureAuthFetch({ children }) {
+  const { callAuthApiPromise } = useAuthActions()
+  return (
+    <SWRConfig
+      value={{
+        fetcher: (...args) =>
+          callAuthApiPromise(
+            token => (url, options) =>
+              fetch(url, {
+                ...options,
+                headers: {
+                  ...options?.headers,
+                  Authorization: `Bearer ${token}`,
+                },
+              })
+                // NOTE: use-eazy-auth needs a Rejection with shape:
+                // { status: number }
+                .then(res => (res.ok ? res.json() : Promise.reject(res))),
+            ...args
+          ),
+      }}
+    >
+      {children}
+    </SWRConfig>
+  )
+}
+
+function App() {
+  return (
+    <Auth loginCall={login} meCall={me} refreshTokenCall={refresh}>
+      <ConfgureAuthFetch>
+        <Dashboard />
+      </ConfgureAuthFetch>
+    </Auth>
+  )
+}
+```
+
+### [react-query](https://github.com/tannerlinsley/react-query)
+
+```jsx
+import { useQuery } from 'react-query'
+import { useAuthActions } from 'use-eazy-auth'
+
+export default function Dashboard() {
+  const { callAuthApiPromise } = useAuthActions()
+  const { data: todos } = useQuery(['todos'], () =>
+    callAuthApiPromise((token) => () =>
+      fetch(`/api/todos`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }).then((res) => (res.ok ? res.json() : Promise.reject(res)))
+    )
+  )
+  // ...
+}
+```
+
+### [react-rocketjump](https://github.com/inmagik/react-rocketjump)
+
+```jsx
+import { ConfigureRj, rj, useRunRj } from 'react-rocketjump'
+import { useAuthActions } from 'use-eazy-auth'
+
+const Todos = rj({
+  effectCaller: rj.configured(),
+  effect: (token) => () =>
+    fetch(`/api/todos/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }).then((res) => (res.ok ? res.json() : Promise.reject(res))),
+})
+
+export default function Dashboard() {
+  const [{ data: todos }] = useRunRj(Todos)
+  // ...
+}
+
+function ConfigureAuthFetch({ children }) {
+  const { callAuthApiObservable } = useAuthActions()
+  // NOTE: react-rocketjump supports RxJs Observables
+  return (
+    <ConfigureRj effectCaller={callAuthApiObservable}>
+      {children}
+    </ConfigureRj>
+  )
+}
+
+function App() {
+  return (
+    <Auth loginCall={login} meCall={me} refreshTokenCall={refresh}>
+      <ConfgureAuthFetch>
+        <Dashboard />
+      </ConfgureAuthFetch>
+    </Auth>
+  )
+}
 ```
 
 ## Run example
