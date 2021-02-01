@@ -87,6 +87,7 @@ interface AuthProps<A = any, R = any, U = any, C = any> {
   storageBackend?: StorageBackend | false
   storageNamespace?: string
   initialData?: InitialAuthData<A, R, U>
+  onLogout?: () => void
 }
 
 export default function Auth<A = any, R = any, U = any, C = any>({
@@ -98,6 +99,7 @@ export default function Auth<A = any, R = any, U = any, C = any>({
   storageBackend,
   storageNamespace = 'auth',
   initialData,
+  onLogout,
 }: AuthProps<A, R, U, C>) {
   const [state, originalDispatch] = useReducer<
     Reducer<AuthStateShape<A, R, U>, AuthActions>,
@@ -192,12 +194,22 @@ export default function Auth<A = any, R = any, U = any, C = any>({
     [authenticated, bootstrappedAuth, performLogin]
   )
 
+  const logoutCbRef = useRef(onLogout)
+  useEffect(() => {
+    logoutCbRef.current = onLogout
+  }, [onLogout])
+
   const performLogout = useCallback(() => {
     // Clear token ref
     tokenRef.current = null
     // Trigger log out
     dispatch({ type: LOGOUT })
     storage.removeTokens()
+    // Invoke logout callback
+    const logoutCb = logoutCbRef.current
+    if (logoutCb) {
+      logoutCb()
+    }
   }, [storage, dispatch])
 
   const logout = useCallback(() => {

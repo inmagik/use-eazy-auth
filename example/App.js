@@ -197,6 +197,7 @@ const App = () => (
     loginCall={loginCall}
     meCall={meCall}
     refreshTokenCall={refreshTokenCall}
+    onLogout={() => console.info('onLogout')}
   >
     <Router>
       <Menu />

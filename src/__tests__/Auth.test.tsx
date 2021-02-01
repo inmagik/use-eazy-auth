@@ -381,7 +381,11 @@ describe('Auth', () => {
     })
 
     const AuthWrapper = ({ children }: { children: ReactNode }) => (
-      <Auth loginCall={loginCall} meCall={meCall} refreshTokenCall={refreshToken}>
+      <Auth
+        loginCall={loginCall}
+        meCall={meCall}
+        refreshTokenCall={refreshToken}
+      >
         {children}
       </Auth>
     )
@@ -418,9 +422,11 @@ describe('Auth', () => {
       loginError: null,
     })
 
-    const apiFn = jest.fn((token: any) => () => Promise.reject({
-      status: 401,
-    }))
+    const apiFn = jest.fn((token: any) => () =>
+      Promise.reject({
+        status: 401,
+      })
+    )
 
     await act(async () => {
       result.current.actions.callAuthApiPromise(apiFn)
@@ -586,5 +592,145 @@ describe('Auth', () => {
 
     // null token 4 ma caller
     expect(fakeApi).toHaveBeenCalledWith('z3cr3t')
+  })
+
+  it('should call onLogout when user explicit logged out', async () => {
+    const loginCall = jest.fn().mockResolvedValue({
+      accessToken: 23,
+    })
+
+    const meCall = jest.fn().mockResolvedValue({
+      id: 23,
+      name: 'Gio Va',
+    })
+
+    // Fake a good storage
+    const resolvesGetItem: TestCallBack[] = []
+    const localStorageMock = {
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const onLogout = jest.fn()
+
+    const AuthWrapper = ({ children }: { children: ReactNode }) => (
+      <Auth loginCall={loginCall} meCall={meCall} onLogout={onLogout}>
+        {children}
+      </Auth>
+    )
+
+    function useAllAuth() {
+      return {
+        actions: useAuthActions(),
+        user: useAuthUser(),
+        state: useAuthState(),
+      }
+    }
+
+    const { result } = renderHook(() => useAllAuth(), {
+      wrapper: AuthWrapper,
+    })
+
+    await act(async () => {
+      resolvesGetItem[0](JSON.stringify({ accessToken: 23 }))
+    })
+
+    expect(result.current.state).toEqual({
+      bootstrappedAuth: true,
+      authenticated: true,
+      loginLoading: false,
+      loginError: null,
+    })
+
+    await act(async () => {
+      result.current.actions.logout()
+    })
+
+    expect(result.current.state).toEqual({
+      bootstrappedAuth: true,
+      authenticated: false,
+      loginLoading: false,
+      loginError: null,
+    })
+
+    expect(onLogout).toHaveBeenCalled()
+  })
+
+  it('should call onLogout when user is kicked by 401', async () => {
+    const loginCall = jest.fn().mockResolvedValue({
+      accessToken: 23,
+    })
+
+    const meCall = jest.fn().mockResolvedValue({
+      id: 23,
+      name: 'Gio Va',
+    })
+
+    // Fake a good storage
+    const resolvesGetItem: TestCallBack[] = []
+    const localStorageMock = {
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const onLogout = jest.fn()
+
+    const AuthWrapper = ({ children }: { children: ReactNode }) => (
+      <Auth loginCall={loginCall} meCall={meCall} onLogout={onLogout}>
+        {children}
+      </Auth>
+    )
+
+    function useAllAuth() {
+      return {
+        actions: useAuthActions(),
+        user: useAuthUser(),
+        state: useAuthState(),
+      }
+    }
+
+    const { result } = renderHook(() => useAllAuth(), {
+      wrapper: AuthWrapper,
+    })
+
+    await act(async () => {
+      resolvesGetItem[0](JSON.stringify({ accessToken: 23 }))
+    })
+
+    expect(result.current.state).toEqual({
+      bootstrappedAuth: true,
+      authenticated: true,
+      loginLoading: false,
+      loginError: null,
+    })
+
+    const kickMe = jest.fn((t) => () =>
+      Promise.reject({
+        status: 401,
+      })
+    )
+
+    await act(async () => {
+      await result.current.actions.callAuthApiPromise(kickMe).catch(() => {})
+    })
+
+    expect(result.current.state).toEqual({
+      bootstrappedAuth: true,
+      authenticated: false,
+      loginLoading: false,
+      loginError: null,
+    })
+
+    expect(onLogout).toHaveBeenCalled()
   })
 })
