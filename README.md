@@ -390,7 +390,7 @@ export type MaybeAuthRouteProps = {
 } & RouteProps
 ```
 
-# Fetching libraries integrations
+## Fetching libraries integrations
 
 ### [SWR](https://github.com/vercel/swr)
 
