@@ -1,6 +1,17 @@
 ## 2.2.0
 ##### *February 1th, 2021*
 
+Added optional `onAuthenticate` callback to `<Auth />`, inoked when is authenticated
+by **use-eazy-auth**.
+
+Signature:
+```ts
+(user: U, accessToken: A, fromLogin: boolean) => void
+```
+
+## 2.2.0
+##### *February 1th, 2021*
+
 Added optional `onLogout` callback to `<Auth />`, inoked when user explicit logout
 (calling `logout` action) or is kicked out from `401` rejection in call api functions.
 
