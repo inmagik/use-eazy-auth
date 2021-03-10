@@ -53,8 +53,6 @@ const tokenRefreshing = () => ({
   type: TOKEN_REFRESHING,
 })
 
-export type LogOutCb = () => void
-
 // Wecolme 2 ~ H E L L ~
 // callApi implemented using rxjs too keep only 1 refreshing task at time
 export default function makeCallApiRx<A, R>(
@@ -64,8 +62,9 @@ export default function makeCallApiRx<A, R>(
   tokenRef: MutableRefObject<AuthTokens<A, R> | null>,
   bootRef: MutableRefObject<boolean>,
   actionObservable: Observable<AuthActions>,
-  logout: LogOutCb
 ) {
+  const logout = () => dispatch({ type: LOGOUT })
+
   let refreshingSemaphore = false
 
   // An Observable that emit when logout was dispatched

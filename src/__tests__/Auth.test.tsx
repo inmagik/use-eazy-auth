@@ -733,4 +733,138 @@ describe('Auth', () => {
 
     expect(onLogout).toHaveBeenCalled()
   })
+
+  it('should call onAuthenticate on boot authentication', async () => {
+    const loginCall = jest.fn().mockResolvedValue({
+      accessToken: 23,
+    })
+
+    const meCall = jest.fn().mockResolvedValue({
+      id: 23,
+      name: 'Gio Va',
+    })
+
+    const onAuthenticate = jest.fn()
+
+    // Fake a good storage
+    const resolvesGetItem: TestCallBack[] = []
+    const localStorageMock = {
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const AuthWrapper = ({ children }: { children: ReactNode }) => (
+      <Auth
+        loginCall={loginCall}
+        meCall={meCall}
+        onAuthenticate={onAuthenticate}
+      >
+        {children}
+      </Auth>
+    )
+
+    function useAllAuth() {
+      return {
+        actions: useAuthActions(),
+        user: useAuthUser(),
+        state: useAuthState(),
+      }
+    }
+
+    renderHook(() => useAllAuth(), {
+      wrapper: AuthWrapper,
+    })
+
+    await act(async () => {
+      resolvesGetItem[0](JSON.stringify({ accessToken: 23 }))
+    })
+
+    expect(onAuthenticate).toHaveBeenCalledWith(
+      {
+        id: 23,
+        name: 'Gio Va',
+      },
+      23,
+      false
+    )
+  })
+
+  it('should call onAuthenticate on login authentication', async () => {
+    const loginCall = jest.fn().mockResolvedValue({
+      accessToken: 99,
+    })
+
+    const meCall = jest.fn().mockResolvedValue({
+      id: 1,
+      name: 'Gio Va U.u',
+    })
+
+    const onAuthenticate = jest.fn()
+
+    // Fake a good storage
+    const resolvesGetItem: TestCallBack[] = []
+    const localStorageMock = {
+      getItem: jest.fn(() => new Promise((r) => resolvesGetItem.push(r))),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+    }
+    Object.defineProperty(global, '_localStorage', {
+      value: localStorageMock,
+      writable: true,
+    })
+
+    const AuthWrapper = ({ children }: { children: ReactNode }) => (
+      <Auth
+        loginCall={loginCall}
+        meCall={meCall}
+        onAuthenticate={onAuthenticate}
+      >
+        {children}
+      </Auth>
+    )
+
+    function useAllAuth() {
+      return {
+        actions: useAuthActions(),
+        user: useAuthUser(),
+        state: useAuthState(),
+      }
+    }
+
+    const { result } = renderHook(() => useAllAuth(), {
+      wrapper: AuthWrapper,
+    })
+
+    await act(async () => {
+      resolvesGetItem[0](null)
+    })
+
+    expect(onAuthenticate).not.toHaveBeenCalled()
+
+    await act(async () => {
+      result.current.actions.login({
+        dude: 'Gio Va',
+      })
+    })
+
+    // expect(meCall).toHaveBeenCalled()
+
+    // await act(async () => {
+    //   await meCall.mock.results[0].value
+    // })
+
+    expect(onAuthenticate).toHaveBeenCalledWith(
+      {
+        id: 1,
+        name: 'Gio Va U.u',
+      },
+      99,
+      true
+    )
+  })
 })

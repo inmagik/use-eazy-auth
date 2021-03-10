@@ -22,6 +22,8 @@ import {
   FunctionalUpdaterUser,
   LOGOUT,
   SET_TOKENS,
+  BOOTSTRAP_AUTH_END,
+  LOGIN_SUCCESS,
 } from './actionTypes'
 import {
   AuthTokens,
@@ -88,6 +90,7 @@ interface AuthProps<A = any, R = any, U = any, C = any> {
   storageNamespace?: string
   initialData?: InitialAuthData<A, R, U>
   onLogout?: () => void
+  onAuthenticate?: (user: U, accessToken: A, fromLogin: boolean) => void
 }
 
 export default function Auth<A = any, R = any, U = any, C = any>({
@@ -100,24 +103,30 @@ export default function Auth<A = any, R = any, U = any, C = any>({
   storageNamespace = 'auth',
   initialData,
   onLogout,
+  onAuthenticate,
 }: AuthProps<A, R, U, C>) {
+  // Init React Reducer
   const [state, originalDispatch] = useReducer<
     Reducer<AuthStateShape<A, R, U>, AuthActions>,
     InitialAuthData<A, R, U> | undefined
   >(authReducer, initialData, initAuthState)
 
-  const [actionObservable, dispatch] = useConstant(() => {
-    const actionSubject = new Subject<AuthActions>()
-    const dispatch = (action: AuthActions) => {
-      originalDispatch(action)
-      actionSubject.next(action)
-    }
-    return [actionSubject.asObservable(), dispatch]
-  })
+  // Handle last onAuthenticate callback
+  const autenticateCbRef = useRef(onAuthenticate)
+  useEffect(() => {
+    autenticateCbRef.current = onAuthenticate
+  }, [onAuthenticate])
 
-  const storage = useMemo(
-    () => makeStorage<A, R>(storageBackend, storageNamespace),
-    [storageBackend, storageNamespace]
+  // Handle last onLogout callback
+  const logoutCbRef = useRef(onLogout)
+  useEffect(() => {
+    logoutCbRef.current = onLogout
+  }, [onLogout])
+
+  // Make storage from config
+  // NOTE: Switch againg from useMemo storage is a constant fuck off
+  const storage = useConstant(() =>
+    makeStorage<A, R>(storageBackend, storageNamespace)
   )
 
   const {
@@ -151,13 +160,42 @@ export default function Auth<A = any, R = any, U = any, C = any>({
   // Handle the ref of booting status of eazy auth
   const bootRef = useRef(bootstrappedAuth)
 
+  const [actionObservable, dispatch] = useConstant(() => {
+    const actionSubject = new Subject<AuthActions>()
+    const dispatch = (action: AuthActions) => {
+      // Update React state reducer
+      originalDispatch(action)
+      // Next Observable
+      actionSubject.next(action)
+      // Handle user callbacks
+      if (action.type === BOOTSTRAP_AUTH_END && action.payload.authenticated) {
+        const autenticateCb = autenticateCbRef.current
+        if (autenticateCb) {
+          autenticateCb(action.payload.user, action.payload.accessToken, false)
+        }
+      }
+      if (action.type === LOGIN_SUCCESS) {
+        const autenticateCb = autenticateCbRef.current
+        if (autenticateCb) {
+          autenticateCb(action.payload.user, action.payload.accessToken, true)
+        }
+      }
+      if (action.type === LOGOUT) {
+        // Clear token ref
+        tokenRef.current = null
+        // Remove tokens from storage
+        storage.removeTokens()
+        // Call user callback
+        const logoutCb = logoutCbRef.current
+        if (logoutCb) {
+          logoutCb()
+        }
+      }
+    }
+    return [actionSubject.asObservable(), dispatch]
+  })
+
   // Boot Eazy Auth
-  // NOTE: Fuck off this subtle change the old bheaviur
-  // before the boot will never appends twice but can't be stopped
-  // ... now if storange change this will take again ... but storage
-  // isn't supporting to changes but in theory the change of storage
-  // should re-booting ma men eazy autth bho maybe check 4 future troubles
-  // and come here again
   useEffect(() => {
     return bootAuth<A, R>(
       meCall,
@@ -194,29 +232,16 @@ export default function Auth<A = any, R = any, U = any, C = any>({
     [authenticated, bootstrappedAuth, performLogin]
   )
 
-  const logoutCbRef = useRef(onLogout)
-  useEffect(() => {
-    logoutCbRef.current = onLogout
-  }, [onLogout])
-
   const performLogout = useCallback(() => {
-    // Clear token ref
-    tokenRef.current = null
     // Trigger log out
     dispatch({ type: LOGOUT })
-    storage.removeTokens()
-    // Invoke logout callback
-    const logoutCb = logoutCbRef.current
-    if (logoutCb) {
-      logoutCb()
-    }
-  }, [storage, dispatch])
+  }, [dispatch])
 
   const logout = useCallback(() => {
-    if (authenticated) {
+    if (tokenRef.current) {
       performLogout()
     }
-  }, [performLogout, authenticated])
+  }, [performLogout])
 
   const setTokens = useCallback(
     (tokensBag: AuthTokens<A, R>) => {
@@ -241,8 +266,7 @@ export default function Auth<A = any, R = any, U = any, C = any>({
       storage,
       tokenRef,
       bootRef,
-      actionObservable,
-      performLogout
+      actionObservable
     )
   })
 
