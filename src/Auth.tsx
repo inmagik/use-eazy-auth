@@ -163,10 +163,6 @@ export default function Auth<A = any, R = any, U = any, C = any>({
   const [actionObservable, dispatch] = useConstant(() => {
     const actionSubject = new Subject<AuthActions>()
     const dispatch = (action: AuthActions) => {
-      // Update React state reducer
-      originalDispatch(action)
-      // Next Observable
-      actionSubject.next(action)
       // Handle user callbacks
       if (action.type === BOOTSTRAP_AUTH_END && action.payload.authenticated) {
         const autenticateCb = autenticateCbRef.current
@@ -183,13 +179,22 @@ export default function Auth<A = any, R = any, U = any, C = any>({
       if (action.type === LOGOUT) {
         // Clear token ref
         tokenRef.current = null
-        // Remove tokens from storage
-        storage.removeTokens()
         // Call user callback
         const logoutCb = logoutCbRef.current
         if (logoutCb) {
           logoutCb()
         }
+      }
+
+      // Update React state reducer
+      originalDispatch(action)
+      // Next Observable
+      actionSubject.next(action)
+
+      // Remove tokens from storage
+      // (after applying the new state cause can be slow)
+      if (action.type === LOGOUT) {
+        storage.removeTokens()
       }
     }
     return [actionSubject.asObservable(), dispatch]
