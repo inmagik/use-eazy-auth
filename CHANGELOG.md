@@ -1,5 +1,5 @@
 ## 2.2.0
-##### *February 1th, 2021*
+##### *March 10th, 2021*
 
 Added optional `onAuthenticate` callback to `<Auth />`, inoked when is authenticated
 by **use-eazy-auth**.
