@@ -48,13 +48,13 @@ export interface AuthUser<U = any, A = any> {
 }
 
 export interface AuthActionCreators<A = any, R = any, U = any, C = any> {
-  callAuthApiObservable<O>(
-    apiFn: CurryAuthApiFn<A, O>,
+  callAuthApiObservable<O, FA extends any[] = any[]>(
+    apiFn: CurryAuthApiFn<A, O, FA>,
     ...args: any[]
   ): Observable<O>
 
-  callAuthApiPromise<O>(
-    apiFn: CurryAuthApiFnPromise<A, O>,
+  callAuthApiPromise<O, FA extends any[] = any[]>(
+    apiFn: CurryAuthApiFnPromise<A, O, FA>,
     ...args: any[]
   ): Promise<O>
 
