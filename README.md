@@ -434,9 +434,9 @@ function ConfigureAuthFetch({ children }) {
 function App() {
   return (
     <Auth loginCall={login} meCall={me} refreshTokenCall={refresh}>
-      <ConfgureAuthFetch>
+      <ConfigureAuthFetch>
         <Dashboard />
-      </ConfgureAuthFetch>
+      </ConfigureAuthFetch>
     </Auth>
   )
 }
