@@ -594,7 +594,7 @@ describe('Auth', () => {
     expect(fakeApi).toHaveBeenCalledWith('z3cr3t')
   })
 
-  it('should call onLogout when user explicit logged out', async () => {
+  it('should call onLogout with last access token when user explicit logged out', async () => {
     const loginCall = jest.fn().mockResolvedValue({
       accessToken: 23,
     })
@@ -659,9 +659,10 @@ describe('Auth', () => {
     })
 
     expect(onLogout).toHaveBeenCalled()
+    expect(onLogout).toHaveBeenCalledWith(23)
   })
 
-  it('should call onLogout when user is kicked by 401', async () => {
+  it('should call onLogout with last access token when user is kicked by 401', async () => {
     const loginCall = jest.fn().mockResolvedValue({
       accessToken: 23,
     })
@@ -732,6 +733,7 @@ describe('Auth', () => {
     })
 
     expect(onLogout).toHaveBeenCalled()
+    expect(onLogout).toHaveBeenCalledWith(23)
   })
 
   it('should call onAuthenticate on boot authentication', async () => {

@@ -89,7 +89,7 @@ interface AuthProps<A = any, R = any, U = any, C = any> {
   storageBackend?: StorageBackend | false
   storageNamespace?: string
   initialData?: InitialAuthData<A, R, U>
-  onLogout?: () => void
+  onLogout?: (accessToken: A) => void
   onAuthenticate?: (user: U, accessToken: A, fromLogin: boolean) => void
 }
 
@@ -177,13 +177,13 @@ export default function Auth<A = any, R = any, U = any, C = any>({
         }
       }
       if (action.type === LOGOUT) {
-        // Clear token ref
-        tokenRef.current = null
         // Call user callback
         const logoutCb = logoutCbRef.current
         if (logoutCb) {
-          logoutCb()
+          logoutCb(tokenRef.current!.accessToken)
         }
+        // Clear token ref
+        tokenRef.current = null
       }
 
       // Update React state reducer
