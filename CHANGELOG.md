@@ -1,4 +1,10 @@
-## 2.2.0
+## 2.4.0
+
+##### *November 02th, 2021*
+
+Call `onLogout` with last user access token.
+
+## 2.3.0
 ##### *March 10th, 2021*
 
 Added optional `onAuthenticate` callback to `<Auth />`, inoked when is authenticated
