@@ -53,6 +53,20 @@ const tokenRefreshing = () => ({
   type: TOKEN_REFRESHING,
 })
 
+export interface CallApiEffect<A> {
+  callAuthApiPromise<O>(
+    apiFn: CurryAuthApiFnPromise<A, O>,
+    ...args: any[]
+  ): Promise<O>
+
+  callAuthApiObservable<O>(
+    apiFn: CurryAuthApiFn<A, O>,
+    ...args: any[]
+  ): Observable<O>
+
+  unsubscribe(): void
+}
+
 // Wecolme 2 ~ H E L L ~
 // callApi implemented using rxjs too keep only 1 refreshing task at time
 export default function makeCallApiRx<A, R>(
@@ -61,8 +75,8 @@ export default function makeCallApiRx<A, R>(
   storage: AuthStorage<A, R>,
   tokenRef: MutableRefObject<AuthTokens<A, R> | null>,
   bootRef: MutableRefObject<boolean>,
-  actionObservable: Observable<AuthActions>,
-) {
+  actionObservable: Observable<AuthActions>
+): CallApiEffect<A> {
   const logout = () => dispatch({ type: LOGOUT })
 
   let refreshingSemaphore = false
@@ -290,14 +304,19 @@ export default function makeCallApiRx<A, R>(
   }
 
   // GioVa 1312 illegal boy
-  const firstBootSub = actionObservable
-    .pipe(
-      filter((action) => action.type === BOOTSTRAP_AUTH_END),
-      take(1)
-    )
-    .subscribe(() => {
-      refreshRoutine.connect()
-    })
+  // NOTE: Yes i know that there is a more elegant or maybe performant
+  // way to do this ... but this works lol
+  const waitFirstBootObservable = bootRef.current
+    ? of(true) // No need to wait
+    : actionObservable.pipe(
+        filter((action) => action.type === BOOTSTRAP_AUTH_END),
+        take(1),
+        map(() => true)
+      )
+
+  const firstBootSub = waitFirstBootObservable.subscribe(() => {
+    refreshRoutine.connect()
+  })
 
   const logoutSub = actionObservable
     .pipe(filter((action) => action.type === LOGOUT))

@@ -161,13 +161,18 @@ interface FailureLoginEffectAction {
   error: any
 }
 
+export interface LoginEffect<C = any> {
+  performLogin: (loginCredentials: C) => void
+  unsubscribe(): void
+}
+
 export function makePerformLogin<A = any, R = any, U = any, C = any>(
   loginCall: LoginCall<C, A, R>,
   meCall: MeCall<A, U>,
   storage: AuthStorage<A, R>,
   dispatch: Dispatch<AuthActions<A, R, U>>,
   tokenRef: MutableRefObject<AuthTokens<A, R> | null>
-): [(loginCredentials: C) => void, () => void] {
+): LoginEffect<C> {
   const loginTrigger = new Subject<C>()
 
   const subscription = loginTrigger
@@ -235,5 +240,5 @@ export function makePerformLogin<A = any, R = any, U = any, C = any>(
     subscription.unsubscribe()
   }
 
-  return [performLogin, unsubscribe]
+  return { performLogin, unsubscribe }
 }
