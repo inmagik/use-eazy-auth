@@ -6,6 +6,7 @@ import {
   ChangeEvent,
   FormEvent,
 } from 'react'
+import { Observable } from 'rxjs'
 import {
   AuthUserContext,
   AuthStateContext,
@@ -13,6 +14,7 @@ import {
   AuthActionCreators,
   AuthUser,
 } from './Auth'
+import { CurryAuthApiFn, CurryAuthApiFnPromise } from './types'
 
 export function useAuthState() {
   const authState = useContext(AuthStateContext)
@@ -22,6 +24,30 @@ export function useAuthState() {
 export function useAuthActions<A = any, R = any, U = any, C = any>() {
   const actions = useContext<AuthActionCreators<A, R, U, C>>(AuthActionsContext)
   return actions
+}
+
+export function useAuthCallObservable<A, O, FA extends any[]>(
+  fn: CurryAuthApiFn<A, O, FA>
+): (...args: FA) => Observable<O> {
+  const { callAuthApiObservable } = useContext<
+    AuthActionCreators<A, unknown, unknown, unknown>
+  >(AuthActionsContext)
+  return useCallback(
+    (...args: FA) => callAuthApiObservable<O, FA>(fn, ...args),
+    [callAuthApiObservable, fn]
+  )
+}
+
+export function useAuthCallPromise<A, O, FA extends any[]>(
+  fn: CurryAuthApiFnPromise<A, O, FA>
+): (...args: FA) => Promise<O> {
+  const { callAuthApiPromise } = useContext<
+    AuthActionCreators<A, unknown, unknown, unknown>
+  >(AuthActionsContext)
+  return useCallback(
+    (...args: any[]) => callAuthApiPromise<O, FA>(fn, ...args),
+    [callAuthApiPromise, fn]
+  )
 }
 
 export function useAuthUser<U = any, A = any>() {

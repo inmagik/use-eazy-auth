@@ -26,10 +26,10 @@ export type LoginCall<C = any, A = any, R = any> = (
   loginCredentials: C
 ) => Promise<AuthTokens<A, R>> | Observable<AuthTokens<A, R>>
 
-export type CurryAuthApiFnPromise<A = any, O = any> = (
+export type CurryAuthApiFnPromise<A = any, O = any, FA extends any[] = any[]> = (
   accessToken: A
-) => (...args: any[]) => Promise<O>
+) => (...args: FA) => Promise<O>
 
-export type CurryAuthApiFn<A = any, O = any> = (
+export type CurryAuthApiFn<A = any, O = any, FA extends any[] = any[]> = (
   accessToken: A
-) => (...args: any[]) => Observable<O> | Promise<O>
+) => (...args: FA) => Observable<O> | Promise<O>

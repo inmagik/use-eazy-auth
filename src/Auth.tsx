@@ -11,8 +11,8 @@ import React, {
 import { Observable, Subject } from 'rxjs'
 import { makeStorage, StorageBackend } from './storage'
 import useConstant from './useConstant'
-import { bootAuth, makePerformLogin } from './authEffects'
-import makeCallApiRx from './callApiRx'
+import { bootAuth, LoginEffect, makePerformLogin } from './authEffects'
+import makeCallApiRx, { CallApiEffect } from './callApiRx'
 // Reducer stuff
 import authReducer, { AuthStateShape, initAuthState } from './reducer'
 import bindActionCreators from './bindActionCreators'
@@ -48,13 +48,13 @@ export interface AuthUser<U = any, A = any> {
 }
 
 export interface AuthActionCreators<A = any, R = any, U = any, C = any> {
-  callAuthApiObservable<O>(
-    apiFn: CurryAuthApiFn<A, O>,
+  callAuthApiObservable<O, FA extends any[] = any[]>(
+    apiFn: CurryAuthApiFn<A, O, FA>,
     ...args: any[]
   ): Observable<O>
 
-  callAuthApiPromise<O>(
-    apiFn: CurryAuthApiFnPromise<A, O>,
+  callAuthApiPromise<O, FA extends any[] = any[]>(
+    apiFn: CurryAuthApiFnPromise<A, O, FA>,
     ...args: any[]
   ): Promise<O>
 
@@ -138,17 +138,7 @@ export default function Auth<A = any, R = any, U = any, C = any>({
     loginError,
   } = state
 
-  // TODO: Check better strategy and future trouble \w async react
-  // This trick is done because token can change over time Es:. the token was refresh
-  // But the callApi function instance can't change because this can cause
-  // re-running of other useEffect \w callApi as deps or break other
-  // memoization ... plus this approch guarantee doesn't trigger re-render
-  // of components thath subscribe only to auth actions context when token changes
-  // SIDE NOTE
-  // In a more idiomatic way at the ends an access token isn't important
-  // for your rendering is only a detail implementation of how your
-  // server rember who you are ... So if a token change isn't important for
-  // rendering but is important for the (*future*) for side effects
+  // Simply keep a token reference lol
   const tokenRef = useRef<AuthTokens<A, R> | null>(
     accessToken ? { accessToken, refreshToken, expires } : null
   )
@@ -219,9 +209,23 @@ export default function Auth<A = any, R = any, U = any, C = any>({
     bindActionCreators(actionCreators, dispatch)
   )
 
-  const [performLogin, unsubscribeFromLogin] = useConstant(() =>
-    makePerformLogin<A, R, U, C>(loginCall, meCall, storage, dispatch, tokenRef)
-  )
+  // Keep a lazy init ref to login effect
+  const loginEffectRef = useRef<LoginEffect<C> | null>(null)
+
+  // NOTE: This respect the old useConstant implementation
+  // All makePerformLogin deps are treat as constants
+  const loginEffectGetter = useRef(() => {
+    if (loginEffectRef.current === null) {
+      loginEffectRef.current = makePerformLogin<A, R, U, C>(
+        loginCall,
+        meCall,
+        storage,
+        dispatch,
+        tokenRef
+      )
+    }
+    return loginEffectRef.current
+  })
 
   const login = useCallback(
     (loginCredentials: C) => {
@@ -231,11 +235,23 @@ export default function Auth<A = any, R = any, U = any, C = any>({
         // Is ma men alredy logged?
         !authenticated
       ) {
+        const { performLogin } = loginEffectGetter.current()
         performLogin(loginCredentials)
       }
     },
-    [authenticated, bootstrappedAuth, performLogin]
+    [authenticated, bootstrappedAuth]
   )
+
+  // Unsubscribe from login effect
+  useEffect(() => {
+    return () => {
+      if (loginEffectRef.current !== null) {
+        // Here it's safe to say: "Goodbye Space Cowboy" lol
+        loginEffectRef.current.unsubscribe()
+        loginEffectRef.current = null
+      }
+    }
+  }, [])
 
   const performLogout = useCallback(() => {
     // Trigger log out
@@ -260,20 +276,50 @@ export default function Auth<A = any, R = any, U = any, C = any>({
     [dispatch, storage]
   )
 
-  const {
-    callAuthApiPromise,
-    callAuthApiObservable,
-    unsubscribe,
-  } = useConstant(() => {
-    return makeCallApiRx(
-      refreshTokenCall,
-      dispatch,
-      storage,
-      tokenRef,
-      bootRef,
-      actionObservable
-    )
+  // Keep a lazy ref to call api effect
+  const callApiEffectRef = useRef<CallApiEffect<A> | null>(null)
+
+  // Lazy get call api effect
+  const callApiEffecGetter = useRef(() => {
+    if (callApiEffectRef.current === null) {
+      callApiEffectRef.current = makeCallApiRx(
+        refreshTokenCall,
+        dispatch,
+        storage,
+        tokenRef,
+        bootRef,
+        actionObservable
+      )
+    }
+    return callApiEffectRef.current
   })
+
+  // Proxy call methods throught lazy getter
+  const callAuthApiPromise = useCallback(function callAuthApiPromise<O>(
+    apiFn: CurryAuthApiFnPromise<A, O>,
+    ...args: any[]
+  ) {
+    return callApiEffecGetter.current().callAuthApiPromise(apiFn, ...args)
+  },
+  [])
+  const callAuthApiObservable = useCallback(function callAuthApiPromise<O>(
+    apiFn: CurryAuthApiFn<A, O>,
+    ...args: any[]
+  ) {
+    return callApiEffecGetter.current().callAuthApiObservable(apiFn, ...args)
+  },
+  [])
+
+  // Unsubscribe safe from call api
+  useEffect(() => {
+    return () => {
+      if (callApiEffectRef.current !== null) {
+        // Here it's safe to say: "Goodbye Space Cowboy" lol
+        callApiEffectRef.current.unsubscribe()
+        callApiEffectRef.current = null
+      }
+    }
+  }, [])
 
   // Memoized actions
   const actions = useMemo(
@@ -314,14 +360,6 @@ export default function Auth<A = any, R = any, U = any, C = any>({
     }),
     [state.user, accessToken]
   )
-
-  useEffect(() => {
-    return () => {
-      // Goodbye Space Cowboy
-      unsubscribe()
-      unsubscribeFromLogin()
-    }
-  }, [unsubscribe, unsubscribeFromLogin])
 
   return (
     <AuthActionsContext.Provider value={actions}>
