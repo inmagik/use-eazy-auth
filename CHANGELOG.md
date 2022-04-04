@@ -1,3 +1,72 @@
+## 2.5.0
+
+##### *April 04th, 2022*
+
+Support React 18 strict effects with reusable state for more info [see](https://github.com/reactwg/react-18/discussions/18)
+
+### :zap: New features
+
+#### `useAuthCallObservable()` and `useAuthCallPromise()`
+
+These hooks make less cumberstone the integration with other fetching library.
+These hooks take a curried token effect fuction and return the same function with a less order.
+
+Here's the typings:
+```ts
+type CurryAuthApiFnPromise<A = any, O = any, FA extends any[] = any[]> = (
+  accessToken: A
+) => (...args: FA) => Promise<O>
+
+type CurryAuthApiFn<A = any, O = any, FA extends any[] = any[]> = (
+  accessToken: A
+) => (...args: FA) => Observable<O> | Promise<O>
+
+function useAuthCallObservable<A, O, FA extends any[]>(
+  fn: CurryAuthApiFn<A, O, FA>
+): (...args: FA) => Observable<O>
+
+function useAuthCallPromise<A, O, FA extends any[]>(
+  fn: CurryAuthApiFnPromise<A, O, FA>
+): (...args: FA) => Promise<O>
+```
+
+An example:
+
+```ts
+function getProducts(token: string) {
+  return (category: string) => fetch(`https://myapi/prodcuts/${category}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  }).then(r => r.ok ? Promise.reject(r) : r.json() as Promise<Product[]>)
+}
+
+// (category: string) => Promise<Product[]>
+const wrappedGetProducts = useAuthCallPromise(getProducts)
+```
+
+The integration with fething libraries is less cumberstone and more funnny:
+
+```js
+import { useQuery } from 'react-query'
+import { useAuthCallPromise } from 'use-eazy-auth'
+
+function useProducts() {
+  return useQuery(
+    ['products'],
+    useAuthCallPromise(
+      (token) => () =>
+        fetch('https://myapi/prodcuts', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+    )
+  )
+}
+```
+
+
 ## 2.4.0
 
 ##### *November 02th, 2021*
