@@ -1,3 +1,22 @@
+
+## 2.6.0
+
+##### *July 20th, 2022*
+
+Make call rejection `401` checks working out of the box with library like [axios](https://axios-http.com).
+
+Istead of checks only:
+```js
+error.status === 401
+```
+Checks also on response:
+```js
+error.response.status === 401
+```
+
+Internally also moved the checks as an helper so in future releases can will be able to be passed as configuration option.
+
+
 ## 2.5.0
 
 ##### *April 04th, 2022*
