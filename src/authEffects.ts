@@ -12,6 +12,7 @@ import {
 } from './actionTypes'
 import { AuthStorage } from './storage'
 import { AuthTokens, LoginCall, MeCall, RefreshTokenCall } from './types'
+import { isUnauthorizedError } from './utils'
 
 export type ApiFn<T = any, O = any> = (token: T) => Promise<O> | Observable<O>
 
@@ -32,7 +33,7 @@ function makeCallWithRefresh<A, R>(
         if (
           // Try refresh when:
           // Got an auth error
-          error.status === 401 &&
+          isUnauthorizedError(error) &&
           // We have a refresh token and an api call that we can perform
           // 2 refresh it!
           refreshToken &&

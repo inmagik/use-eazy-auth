@@ -37,6 +37,7 @@ import {
   CurryAuthApiFn,
   CurryAuthApiFnPromise,
 } from './types'
+import { isUnauthorizedError } from './utils'
 
 // Emulate a 401 Unauthorized from server ....
 const UNAUTHORIZED_ERROR_SHAPE = {
@@ -218,7 +219,7 @@ export default function makeCallApiRx<A, R>(
       !refreshingSemaphore &&
       accessToken === badAccessToken
     ) {
-      if (typeof error === 'object' && error.status === 401) {
+      if (isUnauthorizedError(error)) {
         logout()
       } /*else if (typeof error === 'object' && error.status === 403) {
         logout({ fromPermission: true })
@@ -239,7 +240,7 @@ export default function makeCallApiRx<A, R>(
         unauthLogout(firstAccessToken, error)
         return throwError(error)
       }
-      if (error.status === 401) {
+      if (isUnauthorizedError(error)) {
         // Try refresh
         return refreshOnUnauth(firstAccessToken).pipe(
           mergeMap((accessToken) => {
@@ -285,7 +286,7 @@ export default function makeCallApiRx<A, R>(
               unauthLogout(firstAccessToken, error)
               return Promise.reject(error)
             }
-            if (error.status === 401) {
+            if (isUnauthorizedError(error)) {
               // Try refresh
               return refreshOnUnauth(firstAccessToken)
                 .toPromise()
