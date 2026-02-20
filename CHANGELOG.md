@@ -1,4 +1,11 @@
 
+## 2.7.0
+
+##### *February 20th, 2026*
+
+Exported setTokens action.
+
+
 ## 2.6.0
 
 ##### *July 20th, 2022*

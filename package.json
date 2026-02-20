@@ -1,6 +1,6 @@
 {
   "name": "use-eazy-auth",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "sideEffects": false,
   "description": "React hooks for handle auth stuff",
   "main": "./lib/index.cjs.js",
@@ -25,7 +25,7 @@
     "format": "prettier --no-semi --single-quote --trailing-comma es5  --write \"{src,__{tests,mocks}__}/**/*.js\"",
     "test": "jest",
     "prebuild": "rimraf lib",
-    "build": "rollup -c && tsc --project tsconfig.build.json",
+    "build": "rollup -c",
     "build:watch": "rollup -c -w",
     "dev": "webpack-dev-server"
   },
